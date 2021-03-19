@@ -1,0 +1,539 @@
+variables
+{
+  /* NM-IL Include for initializing the NM panel controls
+   *
+   * ATTENTION: Adapt variables gNumSimNodes and gSimNodeNames and system variable definitions
+   * in file "SysVarDef.xml" to your nodes of the CANoe's simulation setup!
+   *
+   * Version 6.5, (c) 2016 Vector Informatik GmbH, Department for Networks and Distributed Systems
+   */
+
+  dword gNMPFR1_Channel                 = 1; // The FlexRay channel the bus is attached to
+  dword gNMPFR1_DebugFlags              = 0;
+
+  char  gNMPFR1_SysVarNamespace[120];   // Will be initialized in NMPFR1_InitSysVars()
+  char  gNMPFR1_SysVarNMState[100]      = "State";
+  char  gNMPFR1_SysVarNMMode[100]       = "Mode";
+  char  gNMPFR1_SysVarNMRequestBus[100] = "RequestBus";
+  char  gNMPFR1_SysVarNMRequestIL[100]  = "RequestIL";
+
+  const int cNMPFR1_MaxSimNodes = 8;
+  const int cNMPFR1_HasNMPanel = 0;
+
+  // The nodes of CANoe's simulation setup that are observed for the automatic
+  // startup and shutdown of the FlexRay bus:
+  int   gNMPFR1_NumSimNodes = 8;
+    
+  char  gNMPFR1_SimNodeNames[cNMPFR1_MaxSimNodes][100] = { // All these CAPL nodes need to include this file!
+    "ASDM", "CEM", "DIM", "ETC", "IHU", "SRS", "VCM", "VDDM"
+  };
+
+  const dword cNMPFR1_NMControlDebug  = 0x0004;
+  const dword cNMPFR1_BusControlDebug = 0x0008;
+  const dword cNMPFR1_ShowPOCDebug    = 0x0020;
+  const dword cNMPFR1_ShowSymbolDebug = 0x0040;
+
+  enum tFR1_FrPOC_STATE {
+    cFR1_FrPOC_STATE_SYNC_LOST                      = -2,
+    cFR1_FrPOC_STATE_UNKNOWN                        = -1,
+    cFR1_FrPOC_STATE_DEFAULT_CONFIG                 = 0,
+    cFR1_FrPOC_STATE_READY                          = 1,
+    cFR1_FrPOC_STATE_NORMAL_ACTIVE                  = 2,
+    cFR1_FrPOC_STATE_NORMAL_PASSIVE                 = 3,
+    cFR1_FrPOC_STATE_HALT                           = 4,
+    cFR1_FrPOC_STATE_MONITOR_MODE                   = 5,
+    cFR1_FrPOC_STATE_CONFIG                         = 15,
+    cFR1_FrPOC_STATE_WAKEUP_STANDBY                 = 16,
+    cFR1_FrPOC_STATE_WAKEUP_LISTEN                  = 17,
+    cFR1_FrPOC_STATE_WAKEUP_SEND                    = 18,
+    cFR1_FrPOC_STATE_WAKEUP_DETECT                  = 19,
+    cFR1_FrPOC_STATE_STARTUP_PREPARE                = 32,
+    cFR1_FrPOC_STATE_COLDSTART_LISTEN               = 33,
+    cFR1_FrPOC_STATE_COLDSTART_COLLISION_RESOLUTION = 34,
+    cFR1_FrPOC_STATE_COLDSTART_CONSISTENCY_CHECK    = 35,
+    cFR1_FrPOC_STATE_COLDSTART_GAP                  = 36,
+    cFR1_FrPOC_STATE_COLDSTART_JOIN                 = 37,
+    cFR1_FrPOC_STATE_INTEGRATION_COLDSTART_CHECK    = 38,
+    cFR1_FrPOC_STATE_INTEGRATION_LISTEN             = 39,
+    cFR1_FrPOC_STATE_INTEGRATION_CONSISTENCY_CHECK  = 40,
+    cFR1_FrPOC_STATE_INITIALIZE_SCHEDULE            = 41,
+    cFR1_FrPOC_STATE_ABORT_STARTUP                  = 42
+  };
+
+  enum tFR1_ASR_NM_STATE {
+    cFR1_ASR_NM_STATE_UNDEFINED         = 0,
+    cFR1_ASR_NM_STATE_BUS_SLEEP         = 1,
+    cFR1_ASR_NM_STATE_PREPARE_BUS_SLEEP = 2,
+    cFR1_ASR_NM_STATE_READY_SLEEP       = 3,
+    cFR1_ASR_NM_STATE_NORMAL_OPERATION  = 4,
+    cFR1_ASR_NM_STATE_REPEAT_MESSAGE    = 5,
+    cFR1_ASR_NM_STATE_SYNCHRONIZE       = 6
+  };
+
+  enum tFR1_NM_NODE_MODE {
+    cFR1_NM_NODE_MODE_Sleep_Mode        = 0,
+    cFR1_NM_NODE_MODE_Network_Mode      = 1,
+    cFR1_NM_NODE_MODE_Synchronize_Mode  = 2
+  };
+
+  const int cFR1_FrSetPOCSTATE_WAKEUP        = 0; // const for FrSetPOCState()
+  const int cFR1_FrSetPOCSTATE_NORMAL_ACTIVE = 1; // const for FrSetPOCState()
+  const int cFR1_FrSetPOCSTATE_HALT          = 2; // const for FrSetPOCState()
+
+  const int cFR1_FrTransceiverMode_NormalWithWakeup    = 0; // const for FrSetMode()
+  const int cFR1_FrTransceiverMode_Sleep               = 1; // const for FrSetMode()
+  const int cFR1_FrTransceiverMode_NormalWithoutWakeup = 2; // const for FrSetMode()
+
+  const double cNMPFR1_NS2S = 1000000000.0;
+
+  // Internally used variables and timers:
+  int     gNMPFR1_CurrentPOCstate;
+  msTimer gNMPFR1_TGotoPOCWithDelay;
+  msTimer gNMPFR1_TGotoFrTRModeWithDelay;
+  int     gNMPFR1_DesiredPOCState = cFR1_FrSetPOCSTATE_HALT;
+  dword   gNMPFR1_DesiredPOCStateRequests = 0;
+  int     gNMPFR1_DesiredTRMode;
+  msTimer gNMPFR1_TEnableControls;
+  int     gNMPFR1_IsInitialized = 0;
+
+  qword   gNMPFR1_FrameError = 0;
+  double  gNMPFR1_LastWakeupRequest = -1;
+
+}
+
+/*****************************************************************************
+ * Include Initialization
+ *****************************************************************************/
+
+NMPFR1_InitSysVars ()
+{
+  int i;
+  char lSysVarNamespace[120];
+
+  //FrNm_GetNodeName(gNMPFR1_MyNodeName, elcount(gNMPFR1_MyNodeName));
+
+  strncpy(gNMPFR1_SysVarNamespace, "NM_FR1::NODES::N_", elcount(gNMPFR1_SysVarNamespace));
+  strncat(gNMPFR1_SysVarNamespace, gECU, elcount(gNMPFR1_SysVarNamespace));
+
+  //@sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 0;
+
+  strncpy(lSysVarNamespace, "NM_FR1::", elcount(lSysVarNamespace));
+  strncat(lSysVarNamespace, "StateControl", elcount(lSysVarNamespace));
+  if (sysGetVariableInt(lSysVarNamespace, "ControlsDisabled") == 1) return;
+
+  sysSetVariableInt(lSysVarNamespace, "ControlsDisabled", 1);
+
+  @sysvar::NM_FR1::StateControl::ActiveNodes = 0;
+  @sysvar::NM_FR1::StateControl::BusActive = 1;
+  @sysvar::NM_FR1::StateControl::StopCommunication = 0;
+  @sysvar::NM_FR1::StateControl::StartCommunication = 0;
+
+  // If any node is disabled in the sim setup, also init its sys vars:
+  for (i=0; i<cNMPFR1_MaxSimNodes && i<gNMPFR1_NumSimNodes; i++)
+  {
+    strncpy(lSysVarNamespace, "NM_FR1::NODES::N_", elcount(lSysVarNamespace));
+    strncat(lSysVarNamespace, gNMPFR1_SimNodeNames[i], elcount(lSysVarNamespace));
+
+    sysSetVariableInt(lSysVarNamespace, gNMPFR1_SysVarNMState, cFR1_ASR_NM_STATE_UNDEFINED);
+    sysSetVariableInt(lSysVarNamespace, gNMPFR1_SysVarNMMode, cFR1_NM_NODE_MODE_Sleep_Mode);
+    sysSetVariableInt(lSysVarNamespace, gNMPFR1_SysVarNMRequestIL, 0);
+    //sysSetVariableInt(lSysVarNamespace, gNMPFR1_SysVarNMRequestBus, 0);
+  }
+}
+
+_NMPFR1_DisableAllControls ()
+{
+  int i;
+  char lSysVarNamespace[120];
+  char lSysVarName[120];
+
+  if (cNMPFR1_HasNMPanel <= 0)
+  {
+    return;
+  }
+
+  strncpy(lSysVarNamespace, "NM_FR1::", elcount(lSysVarNamespace));
+  strncat(lSysVarNamespace, "StateControl", elcount(lSysVarNamespace));
+  if (sysGetVariableInt(lSysVarNamespace, "ControlsDisabled") >= 2) return;
+
+  for (i=0; i<cNMPFR1_MaxSimNodes && i<gNMPFR1_NumSimNodes; i++)
+  {
+    strncpy(lSysVarName, "NM_FR1_", elcount(lSysVarName));
+    strncat(lSysVarName, gNMPFR1_SimNodeNames[i], elcount(lSysVarName));
+    strncat(lSysVarName, "_NMReq", elcount(lSysVarName));
+    enableControl("NMPanel", lSysVarName, 0);
+    SetControlVisibility("NM Panel FR1", lSysVarName, 0);
+
+    strncpy(lSysVarName, "NM_FR1_", elcount(lSysVarName));
+    strncat(lSysVarName, gNMPFR1_SimNodeNames[i], elcount(lSysVarName));
+    strncat(lSysVarName, "_NMApplAct", elcount(lSysVarName));
+    enableControl("NMPanel", lSysVarName, 0);
+    SetControlVisibility("NM Panel FR1", lSysVarName, 0);
+
+    strncpy(lSysVarName, "NM_FR1_", elcount(lSysVarName));
+    strncat(lSysVarName, gNMPFR1_SimNodeNames[i], elcount(lSysVarName));
+    strncat(lSysVarName, "_ILReq", elcount(lSysVarName));
+    enableControl("NMPanel", lSysVarName, 0);
+    SetControlVisibility("NM Panel FR1", lSysVarName, 0);
+
+    strncpy(lSysVarName, "NM_FR1_", elcount(lSysVarName));
+    strncat(lSysVarName, gNMPFR1_SimNodeNames[i], elcount(lSysVarName));
+    strncat(lSysVarName, "_NMState", elcount(lSysVarName));
+    enableControl("NM Panel FR1", lSysVarName, 0);
+
+    strncpy(lSysVarName, "NM_FR1_", elcount(lSysVarName));
+    strncat(lSysVarName, gNMPFR1_SimNodeNames[i], elcount(lSysVarName));
+    strncat(lSysVarName, "_NMStaticText", elcount(lSysVarName));
+    setControlForeColor("NM Panel FR1", lSysVarName, MakeRGB(180,180,180));
+
+    strncpy(lSysVarName, "NM_FR1_", elcount(lSysVarName));
+    strncat(lSysVarName, gNMPFR1_SimNodeNames[i], elcount(lSysVarName));
+    strncat(lSysVarName, "_NMDeactivate", elcount(lSysVarName));
+    enableControl("NMPanel", lSysVarName, 0);
+    SetControlVisibility("NM Panel FR1", lSysVarName, 0);
+  }
+  sysSetVariableInt(lSysVarNamespace, "ControlsDisabled", 2);
+}
+
+_NMPFR1_EnableMyControls (int enable)
+{
+  gNMPFR1_IsInitialized = 1;
+
+  openPanel("MainPanel");
+
+  if (cNMPFR1_HasNMPanel <= 0)
+  {
+    return;
+  }
+
+  enableControl("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMReq", enable);
+  SetControlVisibility("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMReq", enable);
+  enableControl("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMApplAct", enable);
+  SetControlVisibility("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMApplAct", enable);
+  enableControl("NM Panel FR1", "NM_FR1_%NODE_NAME%_ILReq", enable);
+  SetControlVisibility("NM Panel FR1", "NM_FR1_%NODE_NAME%_ILReq", enable);
+#if ((TOOL_MAJOR_VERSION > 8) || (TOOL_MAJOR_VERSION == 8 && TOOL_MINOR_VERSION > 2) || (TOOL_MAJOR_VERSION == 8 && TOOL_MINOR_VERSION == 2 && TOOL_SERVICE_PACK > 2))
+  // This functionality requires at least CANoe 8.2 SP3:
+  enableControl("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMDeactivate", enable);
+  SetControlVisibility("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMDeactivate", enable);
+#endif
+  enableControl("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMState", enable);
+  setControlForeColor("NM Panel FR1", "NM_FR1_%NODE_NAME%_NMStaticText", MakeRGB(0,0,0));
+  
+  //openPanel("NM Panel FR1");
+}
+
+on timer gNMPFR1_TEnableControls
+{
+  _NMPFR1_EnableMyControls(1);
+}
+
+/*****************************************************************************
+ * Bus Control
+ * These functions control the bus shutdown and startup and is called
+ * from within the NM simulation or the control panel.
+ *****************************************************************************/
+
+_NMPFR1_CheckAllNMStates ()
+{
+  // This function is only internally used!
+  int i;
+  int lNodeState[cNMPFR1_MaxSimNodes];
+  char lSysVarNamespace[120];
+
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%]: _NMPFR1_CheckAllNMStates(): # nodes on = %d", TimeNowNS()/cNMPFR1_NS2S, @sysvar::NM_FR1::StateControl::ActiveNodes);
+  }
+
+  if( @sysvar::NM_FR1::StateControl::AutomaticBusCtrlEnabled == 1 )
+  {
+    if (@sysvar::NM_FR1::StateControl::ActiveNodes <= 0)
+    {
+      NMPFR1_SendFlexRayBusToHalt();
+    } else {
+      NMPFR1_SendFlexRayBusToNormalActive(1);
+    }
+  }
+  if (@sysvar::NM_FR1::StateControl::ActiveNodes < 0)
+    @sysvar::NM_FR1::StateControl::ActiveNodes = 0;
+}
+
+NMPFR1_SendFlexRayBusToHalt()
+{
+  if( @sysvar::NM_FR1::StateControl::BusActive == 1 )
+  {
+    if (gNMPFR1_DebugFlags & cNMPFR1_BusControlDebug)
+    {
+      write("[%.6f %NODE_NAME%}: NMPFR1_SendFlexRayBusToHalt()", TimeNowNS()/cNMPFR1_NS2S);
+    }
+
+    gNMPFR1_DesiredTRMode = cFR1_FrTransceiverMode_Sleep;
+    //FrSetMode(gNMPFR1_Channel, 3, cFR1_FrTransceiverMode_Sleep);
+    //gNMPFR1_TGotoFrTRModeWithDelay.set(1);
+
+    gNMPFR1_DesiredPOCState = cFR1_FrSetPOCSTATE_HALT;
+    FrSetPOCState(gNMPFR1_Channel, 1, gNMPFR1_DesiredPOCState);
+    FrSetPOCState(gNMPFR1_Channel, 2, gNMPFR1_DesiredPOCState);
+    //gNMPFR1_TGotoPOCWithDelay.set(100);
+    gNMPFR1_DesiredPOCStateRequests++;
+
+    @sysvar::NM_FR1::StateControl::StopCommunication = 0;
+    @sysvar::NM_FR1::StateControl::StartCommunication = 0;
+
+    @sysvar::NM_FR1::StateControl::BusActive = 0; // set variable in order to prevent successive FrSetPOCState calls and to fasten the automatic start if any bus request is already available in the RBS.
+  }
+}
+
+NMPFR1_SendFlexRayBusToNormalActive(int withWakeup)
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_BusControlDebug)
+  {
+    //write("[%.6f %NODE_NAME%]: SendFlexRayBusToNormalActive(%d) DesiredPOCStateRequests = %d, BusActive = %d", TimeNowNS()/cNMPFR1_NS2S, withWakeup, gNMPFR1_DesiredPOCStateRequests, @sysvar::NM_FR1::StateControl::BusActive);
+  }
+
+  if( @sysvar::NM_FR1::StateControl::BusActive != 1 )
+  {
+    if (gNMPFR1_DebugFlags & cNMPFR1_BusControlDebug)
+    {
+      write("[%.6f %NODE_NAME%]: NMPFR1_SendFlexRayBusToNormalActive(%d)", TimeNowNS()/cNMPFR1_NS2S, withWakeup);
+    }
+
+    if (isSimulated() == 1)
+      withWakeup = 0; // Wakeup is not possible in simulated mode!
+
+    if (withWakeup > 0)
+    {
+      gNMPFR1_DesiredPOCState = cFR1_FrSetPOCSTATE_WAKEUP;
+      FrSetPOCState(gNMPFR1_Channel, 1, gNMPFR1_DesiredPOCState);
+      gNMPFR1_DesiredPOCState = cFR1_FrSetPOCSTATE_NORMAL_ACTIVE;
+      gNMPFR1_DesiredPOCStateRequests++;
+
+      gNMPFR1_DesiredTRMode = cFR1_FrTransceiverMode_NormalWithWakeup;
+      //FrSetMode(gNMPFR1_Channel, 3, gNMPFR1_DesiredTRMode);
+    }
+    else
+    {
+      if ((   (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_HALT)
+           || (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_SYNC_LOST)
+           || (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_READY)
+          )
+          && (gNMPFR1_DesiredPOCStateRequests == 0)
+         )
+      {
+        gNMPFR1_DesiredPOCState = cFR1_FrSetPOCSTATE_NORMAL_ACTIVE;
+        FrSetPOCState(gNMPFR1_Channel, 1, gNMPFR1_DesiredPOCState);
+        FrSetPOCState(gNMPFR1_Channel, 2, gNMPFR1_DesiredPOCState);
+        //gNMPFR1_TGotoPOCWithDelay.set(0);
+        gNMPFR1_DesiredPOCStateRequests++;
+      }
+
+      gNMPFR1_DesiredTRMode = cFR1_FrTransceiverMode_NormalWithoutWakeup;
+      //FrSetMode(gNMPFR1_Channel, 3, gNMPFR1_DesiredTRMode);
+      //gNMPFR1_TGotoFrTRModeWithDelay.set(0);
+    }
+
+    @sysvar::NM_FR1::StateControl::StopCommunication = 0;
+    @sysvar::NM_FR1::StateControl::StartCommunication = 0;
+  }
+}
+
+NMPFR1_RestartAfterWakeupRX()
+{
+  if (TimeNowNS() - gNMPFR1_LastWakeupRequest < 1000000)
+    return;
+
+  if( @sysvar::NM_FR1::StateControl::AutomaticBusCtrlEnabled == 1 )
+  {
+    @sysvar::NM_FR1::StateControl::ILReleaseAll = 1;
+    NMPFR1_SendFlexRayBusToNormalActive(1);
+  }
+
+  gNMPFR1_LastWakeupRequest = TimeNowNS();
+}
+
+NMPFR1_ShowCurrentPOCState ()
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_ShowPOCDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FlexRay POC State CC%d = %2d (%s); desired = %d", TimeNowNS()/cNMPFR1_NS2S, gNMPFR1_CurrentPOCstate >> 8, (gNMPFR1_CurrentPOCstate & 255), ((enum tFR1_FrPOC_STATE)(gNMPFR1_CurrentPOCstate & 255)).name(), gNMPFR1_DesiredPOCState);
+  }
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::StartCommunication
+{
+  if( @this == 1 )
+  {
+    NMPFR1_SendFlexRayBusToNormalActive(1);
+  }
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::StopCommunication
+{
+  if( @this == 1 )
+  {
+    NMPFR1_SendFlexRayBusToHalt();
+  }
+}
+
+void NMPFR1_ObservePOCState(int channel, int aPOCState, int aInfo2)
+{
+  if (channel != gNMPFR1_Channel)
+    return;
+
+  if (   (aPOCState == cFR1_FrPOC_STATE_HALT)
+      || (aPOCState == (256 | (int)cFR1_FrPOC_STATE_HALT))
+      )
+  {
+    gNMPFR1_IsInitialized = 0;
+  }
+
+  if (aPOCState < 254)
+  {
+    if (gNMPFR1_CurrentPOCstate != aPOCState)
+    {
+      gNMPFR1_DesiredPOCStateRequests = 0;
+    }
+    
+    gNMPFR1_CurrentPOCstate = aPOCState;
+
+    @sysvar::NM_FR1::StateControl::CurrentPOCState = aPOCState;
+
+    NMPFR1_ShowCurrentPOCState();
+
+    // Enable the CC and start sending startup/sync frames if requested:
+    if (   (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_READY)
+        && (gNMPFR1_DesiredPOCState == cFR1_FrSetPOCSTATE_NORMAL_ACTIVE)
+       )
+    {
+      NMPFR1_SendFlexRayBusToNormalActive(0);
+    }
+      
+    // According to POC state allow the IL control and possibly start the IL:
+    if (   (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_NORMAL_ACTIVE)
+        || (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_NORMAL_PASSIVE)
+        || (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_READY)
+       )
+    {
+      gNMPFR1_IsInitialized = 1;
+      @sysvar::NM_FR1::StateControl::CheckILControl = 1 - @sysvar::NM_FR1::StateControl::CheckILControl; // toggle
+    }
+    
+    // Set the sleep mode of the cluster:
+    if (   (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_NORMAL_ACTIVE)
+        || (gNMPFR1_CurrentPOCstate == cFR1_FrPOC_STATE_NORMAL_PASSIVE)
+       )
+    {
+      @sysvar::NM_FR1::StateControl::BusActive = 1;
+    }
+    else
+    {
+      @sysvar::NM_FR1::StateControl::BusActive = 0;
+    }
+
+
+    if (aInfo2 == 7 /* WAKEUP RECEIVED (only with VN interface)*/)
+    {
+      if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+      {
+        write("[%.6f %NODE_NAME%]: WAKEUP RECEIVED", TimeNowNS()/cNMPFR1_NS2S);
+      }
+      if( @sysvar::NM_FR1::StateControl::AutomaticBusCtrlEnabled == 1 )
+      {
+        if (0)
+        {
+          @sysvar::NM_FR1::StateControl::StopCommunication = 0;
+          @sysvar::NM_FR1::StateControl::StartCommunication = 1;
+        }
+        else
+        {
+          NMFR1_PassiveBusStart();
+        }
+      }
+    }
+  }
+}
+
+void NMPFR1_ObserveFrameError(int channel, int aChannelMask, int aSlot, int aCycle, dword aStatus)
+{
+  if( channel == gNMPFR1_Channel )
+  {
+    gNMPFR1_FrameError++;
+    if ( 0 && (gNMPFR1_FrameError > 20))
+    {
+      if( @sysvar::NM_FR1::StateControl::AutomaticBusCtrlEnabled == 1 )
+      {
+        @sysvar::NM_FR1::StateControl::BusReleaseAll = 1;
+      }
+      gNMPFR1_FrameError = 0;
+    }
+  }
+}
+
+void NMPFR1_ObserveSymbol(int channel, int aSymbol, int aChannelMask, int aLength, int aCycle)
+{
+  if( channel == gNMPFR1_Channel )
+  {
+    switch( aSymbol )
+    {
+      case 0: // Unknown
+        if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+        {
+          write("[%.6f %NODE_NAME%]: Symbol received: unknown", TimeNowNS()/cNMPFR1_NS2S);
+        }
+        break;
+      case 1: // CAS
+        if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+        {
+          write("[%.6f %NODE_NAME%]: Symbol received: CAS", TimeNowNS()/cNMPFR1_NS2S);
+        }
+        break;
+      case 2: // MTS
+        if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+        {
+          write("[%.6f %NODE_NAME%]: Symbol received: MTS", TimeNowNS()/cNMPFR1_NS2S);
+        }
+        break;
+      case 3: // Wakeup
+        if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+        {
+          write("[%.6f %NODE_NAME%]: Symbol received: Wakeup", TimeNowNS()/cNMPFR1_NS2S);
+        }
+        NMPFR1_RestartAfterWakeupRX();
+        break;
+      case 4: // Undefined
+        if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+        {
+          write("[%.6f %NODE_NAME%]: Symbol received: Length = %i", TimeNowNS()/cNMPFR1_NS2S, aLength);
+        }
+        if (aLength >= 58)
+        {
+          NMPFR1_RestartAfterWakeupRX();
+        }
+        break;
+      default:
+        if (gNMPFR1_DebugFlags & cNMPFR1_ShowSymbolDebug)
+        {
+          write("[%.6f %NODE_NAME%]: on FrSymbol: unknown item: %i", TimeNowNS()/cNMPFR1_NS2S, aSymbol);
+        }
+        break;
+    }
+  }
+}
+
+on timer gNMPFR1_TGotoPOCWithDelay
+{
+  long ret;
+  ret = FrSetPOCState(gNMPFR1_Channel, 1, gNMPFR1_DesiredPOCState);
+  //write("[%.6f %NODE_NAME%]: FrSetPOCState(%d, %d, %d) = %d", TimeNowNS()/cNMPFR1_NS2S, gNMPFR1_Channel, 1, gNMPFR1_DesiredPOCState, ret);
+  ret = FrSetPOCState(gNMPFR1_Channel, 2, gNMPFR1_DesiredPOCState);
+}
+
+on timer gNMPFR1_TGotoFrTRModeWithDelay
+{
+  FrSetMode(gNMPFR1_Channel, 3, gNMPFR1_DesiredTRMode);
+}
+
+/*****************************************************************************
+ * EOF
+ *****************************************************************************/

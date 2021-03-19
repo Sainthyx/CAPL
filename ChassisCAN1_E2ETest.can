@@ -1,0 +1,147 @@
+/*@!Encoding:936*/
+/*This is used for GEEA20 E2E Check*/
+includes
+{
+    #include "MYETE.cin"
+}
+
+variables
+{
+  //创建一个数组,用来存储如下信息,从[6]开始,元素的值会随数组而变化
+  //SGArr[0] = SGCheckedNumber,创建一个变量用来记录报文检测（收到）的次数,同时用来表征该报文是否被收到过
+  //SGArr[1] = SGCntrErrNumber,创建一个变量用来记录Cntr出错的次数
+  //SGArr[2] = SGChksErrNumber,创建一个变量用来记录Chks出错的次数
+  //SGArr[3] = SGCntrSequenceErrReportedFlag,创建一个变量用来记录Cntr顺序出错是否被报告过了
+  //SGArr[4] = SGCntrInvalidErrReportedFlag,创建一个变量用来记录Cntr编码出错是否被报告过了
+  //SGArr[5] = SGCntrLastValue,创建一个变量用来记录该报文上一次发送内容中的Cntr值
+  
+  //SGArr[6] = SGUpdateBitPosition,用来记录SignalGroup的UB在报文中的位置
+  //SGArr[7] = SGChksPosition,用来记录SignalGroup的Chks的起始位
+  //SGArr[8] = SGCntrposition,用来记录SignalGroup的Cntr的起始位
+  //SGArr[9] = SGDataID,用来存储SignalGroup的DataID的值
+  //SGArr[10] = FrameID,用来存储SignalGroup所在报文的ID
+  //SGArr[11] = SGUBSet,用来表征SignalGroup的UB是否置位过
+  
+  byte PrkgPinionAgReqGroupQFCorrectReported = 0;
+  byte PrkgPinionAgReqGroupQFFailReported = 0;
+  
+  dword PinionSteerAgGroupSigGrpArr[12]={0,0,0,0,0,0,57,7,63,1037,78,0};
+  char PinionSteerAgGroupSigGrpName[50] = "PinionSteerAgGroup";
+  byte PinionSteerAgGroupSigGrpChkdElements[9][3]={
+    {6,7,8},
+    {5,6,7},
+    {1,7,2},
+    {2,7,8},
+    {1,5,6},
+    {3,7,2},
+    {4,7,8},
+    {3,5,6},
+    {7,3,2}
+  };  
+  
+  dword PrkgPinionAgReqGroupSigGrpArr[12]={0,0,0,0,0,0,24,7,15,433,235,0};
+  char PrkgPinionAgReqGroupSigGrpName[50] = "PrkgPinionAgReqGroup";
+  byte PrkgPinionAgReqGroupSigGrpChkdElements[3][3]={
+    {3,7,7},
+    {2,7,8},
+    {1,3,2}
+  };  
+}
+
+on message 0x4E
+{
+  byte PinionSteerAgGroupReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PinionSteerAgGroupReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PinionSteerAgGroupCalculatedChks;    //通过计算得出的Chks的值
+  byte PinionSteerAgGroupDataToBeChecked[12];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PinionSteerAgGroupUpdateBitValue;         //定义一个变量，用于存储UpdateBit的值
+  
+  byte i;
+  byte MessageData[8];
+  for(i=0;i<8;i++){MessageData[i]=this.byte(i);}
+
+
+  PinionSteerAgGroupUpdateBitValue = this.byte(PinionSteerAgGroupSigGrpArr[6]/8) & GetBitValueMask(PinionSteerAgGroupSigGrpArr[6]%8);
+  if(PinionSteerAgGroupUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PinionSteerAgGroupSigGrpArr[11] = 1;
+    PinionSteerAgGroupSigGrpArr[0] ++;
+    PinionSteerAgGroupReceivedCntr = GetCntrValue(MessageData,PinionSteerAgGroupSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PinionSteerAgGroupSigGrpArr,PinionSteerAgGroupReceivedCntr,PinionSteerAgGroupSigGrpName,this.time);
+    //检查Chks是否正确，
+    PinionSteerAgGroupReceivedChks = GetChksValue(MessageData,PinionSteerAgGroupSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PinionSteerAgGroupDataToBeChecked[0] = PinionSteerAgGroupSigGrpArr[9]&0xFF;//取DataID的低字节
+    PinionSteerAgGroupDataToBeChecked[1] = PinionSteerAgGroupSigGrpArr[9]>>8;  //取DataID的高字节
+    PinionSteerAgGroupDataToBeChecked[2] = PinionSteerAgGroupReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PinionSteerAgGroupSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PinionSteerAgGroupDataToBeChecked[i] = GetElementValue(MessageData,PinionSteerAgGroupSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PinionSteerAgGroupCalculatedChks = Crc_CalculateCRC8(PinionSteerAgGroupDataToBeChecked,elCount(PinionSteerAgGroupDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PinionSteerAgGroupCalculatedChks);
+//    write("chk = %#x", this.byte(0));
+//    write("************************************");
+    
+//    if( PinionSteerAgGroupCalculatedChks != this.byte(0))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PinionSteerAgGroupSigGrpArr,PinionSteerAgGroupCalculatedChks,PinionSteerAgGroupReceivedChks,PinionSteerAgGroupSigGrpName,this.time);
+  }
+}
+
+on message 0xEB
+{
+  byte PrkgPinionAgReqGroupReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PrkgPinionAgReqGroupReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PrkgPinionAgReqGroupCalculatedChks;    //通过计算得出的Chks的值
+  byte PrkgPinionAgReqGroupDataToBeChecked[12];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PrkgPinionAgReqGroupUpdateBitValue;         //定义一个变量，用于存储UpdateBit的值
+  
+  byte i;
+  byte MessageData[8];
+  for(i=0;i<8;i++){MessageData[i]=this.byte(i);}
+
+
+  PrkgPinionAgReqGroupUpdateBitValue = this.byte(PrkgPinionAgReqGroupSigGrpArr[6]/8) & GetBitValueMask(PrkgPinionAgReqGroupSigGrpArr[6]%8);
+  if(PrkgPinionAgReqGroupUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PrkgPinionAgReqGroupSigGrpArr[11] = 1;
+    PrkgPinionAgReqGroupSigGrpArr[0] ++;
+    PrkgPinionAgReqGroupReceivedCntr = GetCntrValue(MessageData,PrkgPinionAgReqGroupSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PrkgPinionAgReqGroupSigGrpArr,PrkgPinionAgReqGroupReceivedCntr,PrkgPinionAgReqGroupSigGrpName,this.time);
+    //检查Chks是否正确，
+    PrkgPinionAgReqGroupReceivedChks = GetChksValue(MessageData,PrkgPinionAgReqGroupSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PrkgPinionAgReqGroupDataToBeChecked[0] = PrkgPinionAgReqGroupSigGrpArr[9]&0xFF;//取DataID的低字节
+    PrkgPinionAgReqGroupDataToBeChecked[1] = PrkgPinionAgReqGroupSigGrpArr[9]>>8;  //取DataID的高字节
+    PrkgPinionAgReqGroupDataToBeChecked[2] = PrkgPinionAgReqGroupReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PrkgPinionAgReqGroupSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PrkgPinionAgReqGroupDataToBeChecked[i] = GetElementValue(MessageData,PrkgPinionAgReqGroupSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PrkgPinionAgReqGroupCalculatedChks = Crc_CalculateCRC8(PrkgPinionAgReqGroupDataToBeChecked,elCount(PrkgPinionAgReqGroupDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PrkgPinionAgReqGroupCalculatedChks);
+//    write("chk = %#x", this.byte(0));
+//    write("************************************");
+    
+//    if( PrkgPinionAgReqGroupCalculatedChks != this.byte(0))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PrkgPinionAgReqGroupSigGrpArr,PrkgPinionAgReqGroupCalculatedChks,PrkgPinionAgReqGroupReceivedChks,PrkgPinionAgReqGroupSigGrpName,this.time);
+  }
+}
+
+on StopMeasurement
+{
+  FinalReportFunction(PinionSteerAgGroupSigGrpArr,PinionSteerAgGroupSigGrpName);
+  FinalReportFunction(PrkgPinionAgReqGroupSigGrpArr,PrkgPinionAgReqGroupSigGrpName);
+}

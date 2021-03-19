@@ -1,0 +1,29 @@
+/*@!Encoding:1252*/
+variables
+{
+}
+
+on preStart
+{
+  //@_SPACommon::SimulationControl = @_SPACommon::SimulationControl::Off;
+  @_SPACommon::UBControl = @_SPACommon::UBControl::UBHandled;
+  @_SPACommon::E2EUBMode = @_SPACommon::E2EUBMode::PnP;
+}
+
+on sysvar_update _SPACommon::SimulationControl
+{
+  @IL::Ignition = @this;
+  @IL::Power = @this;
+  @%NODE_NAME%::Common::Control::SimulationControl = @this;
+}
+
+on sysvar_update _SPACommon::UBControl
+{
+  @%NODE_NAME%::Common::Control::UB = @this;
+}
+
+on sysvar_update _SPACommon::E2EUBMode
+{
+  @%NODE_NAME%::Common::Control::E2EUBMode = @this;
+}
+

@@ -1,0 +1,414 @@
+/*@!Encoding:936*/
+includes
+{ 
+}
+
+variables
+{
+}
+//CRC算法，用来计算E2E的值
+byte Crc_CalculateCRC8(byte data[],int dataLen,byte Crc_StartValue8)
+{
+  int i,j;
+  byte polynomial;
+  byte initValue;
+  polynomial = 0x1d;
+  initValue = Crc_StartValue8^0X00;
+  for(i=0;i<dataLen;i++)
+  {
+    initValue = initValue ^ data[i];
+    for(j=0;j<8;j++)
+    {
+      if(initValue & 0x80)
+      {
+        initValue = ((initValue << 1) & 0xff);
+        initValue = initValue ^ polynomial;
+      }
+      else
+      {
+        initValue = ((initValue << 1) & 0xff);
+      }
+    }
+  }
+  initValue = initValue ^ 0x00;
+  return(initValue);
+}
+//本函数用于取得一个byte中某一个bit的值是否为零
+byte GetBitValueMask(byte BitPositionInByte)
+{
+	byte  mask;
+    if(BitPositionInByte==0){mask=0x01;};
+    if(BitPositionInByte==1){mask=0x02;};
+    if(BitPositionInByte==2){mask=0x04;};
+    if(BitPositionInByte==3){mask=0x08;};
+    if(BitPositionInByte==4){mask=0x10;};
+    if(BitPositionInByte==5){mask=0x20;};
+    if(BitPositionInByte==6){mask=0x40;};
+    if(BitPositionInByte==7){mask=0x80;};
+  return(mask);
+}
+void CntrChecksFunction(dword SGArr[],byte SGReceivedCntr,char SGName[],long MsgTime)
+{
+
+    if(SGReceivedCntr == 0xF)//如果出现了非法值
+    {
+      if(SGArr[4] == 0)//如果从来没报告过错误
+      {
+        write("0x%x %s Cntr Coding 0xF, timestamp=%f!",SGArr[10],SGName,MsgTime/100000.000);
+        SGArr[4] =1;
+      } 
+      ++SGArr[1];
+    }
+}
+//因为FlexRay的ID形式与CAN LIN不同，所以单列一个函数，该函数其余功能与CntrChecksFunction相同
+void FlexRayCntrChecksFunction(dword SGArr[],byte SGReceivedCntr,char SGName[],dword SGFlexRayID[],long MsgTime)
+{
+
+    if(SGReceivedCntr == 0xF)//如果出现了非法值
+    {
+      if(SGArr[4] == 0)//如果从来没报告过错误
+      {
+        write("(%d,%d,%d) %s Cntr Coding 0xF, timestamp=%f!",SGFlexRayID[0],SGFlexRayID[1],SGFlexRayID[2],SGName,MsgTime/100000.000);
+        SGArr[4] =1;
+      } 
+      ++SGArr[1];
+    }
+}
+void ChksChecksFunction(dword SGArr[],byte SGCalculatedChks,byte SGReceivedChks,char SGName[],long MsgTime)
+{
+
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    if(SGCalculatedChks != SGReceivedChks)
+    {
+      if(SGArr[2] == 0)
+      {
+        write("0x%x %s E2E Chks fail, timestamp=%f !Calc CRC = 0x%x, Measured CRC = 0x%x",SGArr[10],SGName,MsgTime/100000.000,SGCalculatedChks,SGReceivedChks);
+        ++SGArr[2];
+      }
+    }
+}
+//因为FlexRay的ID形式与CAN LIN不同，所以单列一个函数，该函数其余功能与ChksChecksFunction相同
+void FlexRayChksChecksFunction(dword SGArr[],byte SGCalculatedChks,byte SGReceivedChks,char SGName[],dword SGFlexRayID[],long MsgTime)
+{
+
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    if(SGCalculatedChks != SGReceivedChks)
+    {
+      if(SGArr[2] == 0)
+      {
+        write("(%d,%d,%d) %s E2E Chks fail, timestamp=%f !Calc CRC = 0x%x, Measured CRC = 0x%x",SGFlexRayID[0],SGFlexRayID[1],SGFlexRayID[2],SGName,MsgTime/100000.000,SGCalculatedChks,SGReceivedChks);
+        ++SGArr[2];
+      }
+    }
+}
+void FinalReportFunction(dword SGArr[],char SGName[])
+{
+  //如果一个报文从来没被接收到过，则write其从未被检查过
+  if(SGArr[11] == 0)
+  {
+    write("0x%x %s UpdateBit has never been set!",SGArr[10],SGName);
+  } 
+  //如果一个报文被接收过，且没有发现任何错误，则write输出E2E校验正确
+  if(SGArr[0] != 0 && SGArr[1] == 0 && SGArr[2] == 0)
+  {
+    write("0x%x %s  E2E Secceed!",SGArr[10],SGName);
+  }
+}
+//由于FlexRay报文的ID形式和CAN LIN 不同，所以只能单独拿出来形成函数，因为SGArr[10]中只包含了Slot信息，没有包含BaseCycle和CycleRep信息
+void FlexRayFinalReportFunction(dword SGArr[],char SGName[],dword SGFlexRayID[])
+{
+  //如果一个报文从来没被接收到过，则write其从未被检查过
+  if(SGArr[11] == 0)
+  {
+    write("(%d,%d,%d) %s UpdateBit has never been set!",SGFlexRayID[0],SGFlexRayID[1],SGFlexRayID[2],SGName);
+  } 
+  //如果一个报文被接收过，且没有发现任何错误，则write输出E2E校验正确
+  if(SGArr[0] != 0 && SGArr[1] == 0 && SGArr[2] == 0)
+  {
+    write("(%d,%d,%d) %s  E2E Secceed!",SGFlexRayID[0],SGFlexRayID[1],SGFlexRayID[2],SGName);
+  }
+}
+//这个函数，输入①整个报文的值，③长度为四位的Cntr在报文中的起始位，输出要取的Cntr的值，需要与该Byte的值做的运算
+//这个函数有个问题，就是没考虑Cntr跨字节的情况，待后续完善
+//这个函数用于Cntr为Motorola的排布形式下，输入起始位，输出Cntr的值
+byte GetCntrValue(byte MessageData[],dword CntrStartPositionInMessage)
+{
+  byte CntrValue;
+  byte PositionInByte;
+  byte byteNumber;
+  byteNumber = CntrStartPositionInMessage/8;
+  PositionInByte = CntrStartPositionInMessage%8;
+  CntrValue = 0x0;
+  switch(PositionInByte)
+  {
+    case 0x0:
+      CntrValue = ((MessageData[byteNumber] &0x01)<<3) + ((MessageData[byteNumber+1]&0xE0)>>5);
+      break;
+     case 0x1:
+      CntrValue = ((MessageData[byteNumber] &0x03)<<2) + ((MessageData[byteNumber+1]&0xC0)>>6);
+      break;
+     case 0x2:
+      CntrValue = ((MessageData[byteNumber] &0x08)<<1) + ((MessageData[byteNumber+1]&0x80)>>7);
+      break;
+     case 0x3:
+      CntrValue = MessageData[byteNumber] &0x0F;
+      break;
+     case 0x4:
+      CntrValue = (MessageData[byteNumber] &0x1E)>>1;
+      break;
+     case 0x5:
+      CntrValue = (MessageData[byteNumber] &0x3C)>>2;
+      break;
+     case 0x6:
+      CntrValue = (MessageData[byteNumber] &0x78)>>3;
+      break;
+     case 0x7:
+      CntrValue = (MessageData[byteNumber] &0xF0)>>4;
+      break;
+  }
+  return CntrValue;
+}
+//这个函数，输入①所在Byte的值，③长度为四位的Cntr在其所在字节的bit位置，输出要取的Cntr的值，需要与该Byte的值做的运算
+//这个函数用于Cntr为Intel的排布形式下，输入起始位，输出Cntr的值
+byte GetIntelCntrValue(byte MessageData[],dword CntrStartPositionInMessage)
+{
+  byte CntrValue;
+  byte PositionInByte;
+  byte byteNumber;
+  byteNumber = CntrStartPositionInMessage/8;
+  PositionInByte = CntrStartPositionInMessage%8;
+  CntrValue = 0x0;
+  switch(PositionInByte)
+  {
+    case 0x0:
+      CntrValue = MessageData[byteNumber] &0x0F;
+      break;
+     case 0x1:
+      CntrValue = (MessageData[byteNumber] &0x1E)>>1;
+      break;
+     case 0x2:
+      CntrValue = (MessageData[byteNumber] &0x3C)>>2;
+      break;
+     case 0x3:
+      CntrValue = (MessageData[byteNumber] &0x78)>>3;
+      break;
+     case 0x4:
+      CntrValue = (MessageData[byteNumber] &0xF0)>>4;
+      break;
+     case 0x5:
+      CntrValue = ((MessageData[byteNumber])>>5) + ((MessageData[byteNumber+1]&0x01)<<3);
+      break;
+     case 0x6:
+      CntrValue = ((MessageData[byteNumber])>>6) + ((MessageData[byteNumber+1]&0x03)<<2);
+      break;
+     case 0x7:
+      CntrValue = ((MessageData[byteNumber])>>7) + ((MessageData[byteNumber+1]&0x08)<<1);
+      break;
+  }
+  return CntrValue;
+}
+//这个函数用来将待CRC校验的数组的元素所在Byte中，元素左边的位的值都设为0
+byte GetSigValueMask(byte StartBit)
+{
+  byte Mask;
+  switch (StartBit)
+  {
+    case 0x0:
+      Mask=0x01;break;
+    case 0x1:
+      Mask=0x03;break;
+    case 0x2:
+      Mask=0x07;break;
+    case 0x3:
+      Mask=0x0F;break;
+    case 0x4:
+      Mask=0x1F;break;
+    case 0x5:
+      Mask=0x3F;break;
+    case 0x6:
+      Mask=0x7F;break;
+    case 0x7:
+      Mask=0xFF;break;    
+  }
+
+  return Mask;
+}
+
+
+
+//如下函数为输入待进行Chks计算的数组中的元素位置，输出元素在报文中的数值
+//其中，MessageData为接收到的报文中的数据场的值，SG为待进行Chks计算的数组，SGRow为数组中元素所在的行数（注意，从编号0开始）
+//该函数用于Motorola进行排布的元素取值
+byte GetElementValue(byte MessageData[],byte SG[][],byte SGRow)
+{
+  byte ElementValue,ElementMSBValue,ElementLSBValue;
+  ElementValue = 0x0;
+  ElementMSBValue = 0x0;
+  ElementLSBValue = 0x0;
+  //如果元素不跨行
+  if (SG[SGRow][1]- SG[SGRow][2] + 1 >=0)
+  {
+    ElementValue = ((MessageData[SG[SGRow][0]]) & GetSigValueMask(SG[SGRow][1]))>>(SG[SGRow][1]- SG[SGRow][2] +1);
+    //SG[SGRow][0]为元素所在行数，MessageData为取出报文数据场中该Byte的数值;
+    //& GetSigValueMask(SG[SGRow][1])为将起始位左边的位的值全部置零；
+    //>>(SG[SGRow][1]- SG[SGRow][2] -1)为把值右移n位，将不相干的位及其值通过移位删除;
+  }
+  //如果元素跨行
+  else
+  {
+    ElementMSBValue = ((MessageData[SG[SGRow][0]]) & GetSigValueMask(SG[SGRow][1]))<<(SG[SGRow][2]-SG[SGRow][1]-1);
+    //取出在MSB字节中的内容，并向左移位以使得数值增大，便于后面与LSB直接相加；
+    ElementLSBValue = (MessageData[SG[SGRow][0]+1])>>(9-SG[SGRow][2]+SG[SGRow][1]);
+    //LSB字节中的内容，往右移位以取得值
+    ElementValue = ElementMSBValue+ElementLSBValue;
+  }  
+  return ElementValue;
+}
+
+//如下函数为输入待进行Chks计算的数组中的元素位置，输出元素在报文中的数值
+//其中，MessageData为接收到的报文中的数据场的值，SG为待进行Chks计算的数组，SGRow为数组中元素所在的行数（注意，从编号0开始）
+//该函数用于Intel进行排布的元素取值
+byte GetIntelElementValue(byte MessageData[],byte SG[][],byte SGRow)
+{
+  byte ElementValue,ElementMSBValue,ElementLSBValue;
+  ElementValue = 0x0;
+  ElementMSBValue = 0x0;
+  ElementLSBValue = 0x0;
+  //如果元素不跨行
+  if (SG[SGRow][1] + SG[SGRow][2] <=8)
+  {
+    ElementValue = ((MessageData[SG[SGRow][0]]) & GetSigValueMask(SG[SGRow][1]+SG[SGRow][2]-1))>>(SG[SGRow][1]);
+    //SG[SGRow][0]为元素所在行数，MessageData为取出报文数据场中该Byte的数值;
+    //& GetSigValueMask()为将起始位左边的位的值全部置零；
+    //>>为把值右移n位，将不相干的位及其值通过移位删除;
+  }
+  //如果元素跨行
+  else
+  {
+    ElementLSBValue = (MessageData[SG[SGRow][0]]) >>(SG[SGRow][1]);
+    //LSB字节中的内容，往右移位以取得值
+    
+    ElementMSBValue = (MessageData[SG[SGRow][0]+1]& GetSigValueMask(SG[SGRow][2]-(8-SG[SGRow][1])-1))<<(8-SG[SGRow][1]);
+    //取出在MSB字节中的内容，并向左移位以使得数值增大，便于后面与LSB直接相加；
+    ElementValue = ElementMSBValue+ElementLSBValue;
+  }  
+  return ElementValue;
+}
+//如下函数用来输入Qf信号的起始字节（MSB），然后函数输出Qf的取值
+//用于Motorola
+byte GetQfValueMask(byte MessageData[],dword QfStartBit)
+{
+  dword SignalByte;
+  dword SignalStartBitInByte;
+  byte QfValue;
+  SignalByte = QfStartBit/8;
+  SignalStartBitInByte = QfStartBit%8;
+  if (SignalStartBitInByte >0)
+  {
+    QfValue = ((MessageData[SignalByte]<<(7-SignalStartBitInByte))&0xC0)>>6;
+  }
+  else
+  {
+    QfValue = ((MessageData[SignalByte] & 0x1) <<1) + ((MessageData[SignalByte+1]&0x80))>>7;
+  }
+  return QfValue;
+}
+//如下函数用来输入Qf信号的起始字节（MSB），然后函数输出Qf的取值
+//用于Intel
+byte GetIntelQfValueMask(byte MessageData[],dword QfStartBit)
+{
+  dword SignalByte;
+  dword SignalStartBitInByte;
+  byte QfValue;
+  SignalByte = QfStartBit/8;
+  SignalStartBitInByte = QfStartBit%8;
+  if (SignalStartBitInByte <7)
+  {
+    QfValue = ((MessageData[SignalByte]<<(6-SignalStartBitInByte))&0xC0)>>6;
+  }
+  else
+  {
+    QfValue = ((MessageData[SignalByte] & 0x80) >>7) + ((MessageData[SignalByte+1]&0x01)<<1);
+  }
+  return QfValue;
+}
+
+
+//这个函数，输入①整个报文的值，③长度为8位的Chks在报文中的起始位，输出要取的Chks的值
+//这个函数用于Chks为Motorola的排布形式下，输入起始位，输出Chks的值
+byte GetChksValue(byte MessageData[],dword ChksStartPositionInMessage)
+{
+  byte ChksValue;
+  byte PositionInByte;
+  byte byteNumber;
+  byteNumber = ChksStartPositionInMessage/8;
+  PositionInByte = ChksStartPositionInMessage%8;
+  ChksValue = 0x0;
+  switch(PositionInByte)
+  {
+    case 0x0:
+      ChksValue = ((MessageData[byteNumber] &0x01)<<7) + ((MessageData[byteNumber+1]&0xFE)>>1);
+      break;
+     case 0x1:
+      ChksValue = ((MessageData[byteNumber] &0x03)<<6) + ((MessageData[byteNumber+1]&0xFC)>>2);
+      break;
+     case 0x2:
+      ChksValue = ((MessageData[byteNumber] &0x08)<<5) + ((MessageData[byteNumber+1]&0xF8)>>3);
+      break;
+     case 0x3:
+      ChksValue = ((MessageData[byteNumber] &0x0F)<<4) + ((MessageData[byteNumber+1]&0xF0)>>4);
+      break;
+     case 0x4:
+      ChksValue = ((MessageData[byteNumber] &0x1F)<<3) + ((MessageData[byteNumber+1]&0xE0)>>5);
+      break;
+     case 0x5:
+      ChksValue = ((MessageData[byteNumber] &0x3F)<<2) + ((MessageData[byteNumber+1]&0xC0)>>6);
+      break;
+     case 0x6:
+      ChksValue = ((MessageData[byteNumber] &0x8F)<<1) + ((MessageData[byteNumber+1]&0x80)>>7);
+      break;
+     case 0x7:
+      ChksValue = MessageData[byteNumber];
+      break;
+  }
+  return ChksValue;
+}
+//这个函数，输入①整个报文的值，③长度为8位的Chks在报文中的起始位，输出要取的Chks的值
+//这个函数用于Chks为Intel的排布形式下，输入起始位，输出Chks的值
+byte GetIntelChksValue(byte MessageData[],dword ChksStartPositionInMessage)
+{
+  byte ChksValue;
+  byte PositionInByte;
+  byte byteNumber;
+  byteNumber = ChksStartPositionInMessage/8;
+  PositionInByte = ChksStartPositionInMessage%8;
+  ChksValue = 0x0;
+  switch(PositionInByte)
+  {
+    case 0x0:
+      ChksValue = MessageData[byteNumber];
+      break;
+     case 0x1:
+      ChksValue = ((MessageData[byteNumber] &0xFE)>>1) + ((MessageData[byteNumber+1]&0x01)<<7);
+      break;
+     case 0x2:
+      ChksValue = ((MessageData[byteNumber] &0xFC)>>2) + ((MessageData[byteNumber+1]&0x03)<<6);
+      break;
+     case 0x3:
+      ChksValue = ((MessageData[byteNumber] &0xF8)>>3) + ((MessageData[byteNumber+1]&0x08)<<5);
+      break;
+     case 0x4:
+      ChksValue = ((MessageData[byteNumber] &0xF0)>>4) + ((MessageData[byteNumber+1]&0x0F)<<4);
+      break;
+     case 0x5:
+      ChksValue = ((MessageData[byteNumber] &0xE0)>>5) + ((MessageData[byteNumber+1]&0x1F)<<3);
+      break;
+     case 0x6:
+      ChksValue = ((MessageData[byteNumber] &0xC0)>>6) + ((MessageData[byteNumber+1]&0x3F)<<2);
+      break;
+     case 0x7:
+      ChksValue = ((MessageData[byteNumber] &0x80)>>7) + ((MessageData[byteNumber+1]&0x8F)<<1);
+      break;
+  }
+  return ChksValue;
+}

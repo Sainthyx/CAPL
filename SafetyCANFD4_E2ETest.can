@@ -1,0 +1,1461 @@
+/*@!Encoding:936*/
+includes
+{
+    #include "MYETE.cin"
+}
+
+variables
+{
+  //PAS4 Rx msg
+  dword VehSpdLgtSigGrpArr[12]={0,0,0,0,0,0,271,287,295,55,101,0};
+  char VehSpdLgtSigGrpName[50] = "VehSpdLgt";
+  byte VehSpdLgtSigGrpChkdElements[3][3]={
+    {34,7,8},
+    {33,6,7},
+    {36,3,2}
+  };
+  
+  dword AsyALgtCtrlModSigGrpArr[12] = {0,0,0,0,0,0,47,31,39,3350,105,0};
+  char AsyALgtCtrlModSigGrpName[50] = "AsyALgtCtrlMod1";
+  byte AsyALgtCtrlModSigGrpChkdElements[1][3]={
+    {4,3,4}
+  };
+  
+  dword AsyALgtCtrlModCfmdSigGrpArr[12] = {0,0,0,0,0,0,40,55,63,1046,105,0};
+  char AsyALgtCtrlModCfmdSigGrpName[50] = "AsyALgtCtrlModCfmdAsyALgtCtrlMod1";
+  byte AsyALgtCtrlModCfmdSigGrpChkdElements[1][3]={
+    {7,3,4}
+  };
+  
+  dword AsyLatCtrlModReqGroupSigGrpArr[12] = {0,0,0,0,0,0,42,87,95,7890,105,0};
+  char AsyLatCtrlModReqGroupSigGrpName[50] = "AsyLatCtrlModReqGroupAsyLatCtrlModReq";
+  byte AsyLatCtrlModReqGroupSigGrpChkdElements[1][3]={
+    {11,3,4}
+  };
+  
+  dword AsyLatCtrlModReqGroupCfmdSigGrpArr[12] = {0,0,0,0,0,0,43,103,111,1060,105,0};
+  char AsyLatCtrlModReqGroupCfmdSigGrpName[50] = "AsyLatCtrlModReqGroupCfmdLatCtrlMod";
+  byte AsyLatCtrlModReqGroupCfmdSigGrpChkdElements[1][3]={
+    {13,3,4}
+  };
+  
+  dword EngSt1WdStsSigGrpArr[12] = {0,0,0,0,0,0,71,87,95,137,101,0};
+  char EngSt1WdStsSigGrpName[50] = "EngSt1WdStsEngSt1WdSts";
+  byte EngSt1WdStsSigGrpChkdElements[1][3]={
+    {11,3,4}
+  };
+  
+  dword EpbStsSigGrpArr[12] = {0,0,0,0,0,0,304,319,323,132,105,0};
+  char EpbStsSigGrpName[50] = "EpbStsEpbSts";
+  byte EpbStsSigGrpChkdElements[1][3]={
+    {40,7,4}
+  };
+  
+  dword EscStSigGrpArr[12] = {0,0,0,0,0,0,167,175,163,127,101,0};
+  char EscStSigGrpName[50] = "EscStEscSt";
+  byte EscStSigGrpChkdElements[1][3]={
+    {20,6,3}
+  };
+  
+  dword GuestrStsSigGrpArr[12] = {0,0,0,0,0,0,354,351,359,8010,101,0};
+  char GuestrStsSigGrpName[50] = "GuestrStsValidity";
+  byte GuestrStsSigGrpChkdElements[1][3]={
+    {44,3,1}
+  };
+  
+  dword ADataRawSafeSigGrpArr[12] = {0,0,0,0,0,0,56,7,15,34,128,0};
+  char ADataRawSafeSigGrpName[50] = "ADataRawSafe";
+  byte ADataRawSafeSigGrpChkdElements[10][3]={
+    {3,7,7},
+    {2,7,8},
+    {1,3,2},
+    {5,7,8},
+    {4,6,7},
+    {1,1,2},
+    {7,7,7},
+    {6,7,8},
+    {4,7,1},
+    {3,0,1}
+  };
+  
+  dword AgDataRawSafeSigGrpArr[12] = {0,0,0,0,0,0,183,103,111,35,128,0};
+  char AgDataRawSafeSigGrpName[50] = "AgDataRawSafe";
+  byte AgDataRawSafeSigGrpChkdElements[6][3]={
+    {9,7,8},
+    {8,7,8},
+    {13,3,2},
+    {11,7,8},
+    {10,7,8},
+    {13,1,2}
+  };
+  
+  dword AsyDataWithCmpSafeSigGrpArr[12] = {0,0,0,0,0,0,168,135,159,36,128,0};
+  char AsyDataWithCmpSafeSigGrpName[50] = "AsyDataWithCmpSafe";
+  byte AsyDataWithCmpSafeSigGrpChkdElements[9][3]={
+    {19,1,2},
+    {21,7,7},
+    {20,7,8},
+    {19,3,2},
+    {18,7,6},
+    {17,7,8},
+    {18,1,2},
+    {15,7,8},
+    {14,7,8}
+  };
+  
+  dword MobDevRPAAuthRespSigGrpArr[12] = {0,0,0,0,0,0,421,455,420,8011,105,0};
+  char MobDevRPAAuthRespSigGrpName[50] = "MobDevRPAAuthResp";
+  byte MobDevRPAAuthRespSigGrpChkdElements[4][3]={
+    {53,7,8},
+    {52,0,1},
+    {54,7,8},
+    {55,7,8}
+  };
+  
+  dword MobDevRPAReqSigGrpArr[12] = {0,0,0,0,0,0,360,351,339,8001,128,0};
+  char MobDevRPAReqSigGrpName[50] = "MobDevRPAReq";
+  byte MobDevRPAReqSigGrpChkdElements[4][3]={
+    {44,7,8},
+    {42,7,4},
+    {45,7,4},
+    {45,3,3}
+  };
+  
+  dword PrkLatLgtFailrSigGrpArr[12] = {0,0,0,0,0,0,223,231,219,1057,101,0};
+  char PrkLatLgtFailrSigGrpName[50] = "PrkLatLgtFailr";
+  byte PrkLatLgtFailrSigGrpChkdElements[1][3]={
+    {27,6,3}
+  };
+  
+  dword StandStillMgrStsForHldSigGrpArr[12] = {0,0,0,0,0,0,223,231,219,1096,128,0};
+  char StandStillMgrStsForHldSigGrpName[50] = "StandStillMgrStsForHld";
+  byte StandStillMgrStsForHldSigGrpChkdElements[1][3]={
+    {27,6,3}
+  };
+  
+  dword VehModMngtGlbSafe1SigGrpArr[12] = {0,0,0,0,0,0,280,255,263,116,105,0};
+  char VehModMngtGlbSafe1SigGrpName[50] = "VehModMngtGlbSafe1";
+  byte VehModMngtGlbSafe1SigGrpChkdElements[8][3]={
+    {35,7,3},
+    {35,4,3},
+    {32,3,4},
+    {33,7,4},
+    {35,1,1},
+    {33,3,4},
+    {34,7,4},
+    {34,3,4}
+  };
+   
+  dword VehMtnStSigGrpArr[12] = {0,0,0,0,0,0,255,263,254,54,101,0};
+  char VehMtnStSigGrpName[50] = "VehMtnStVehMtnSt";
+  byte VehMtnStSigGrpChkdElements[1][3]={
+    {31,2,3}
+  };
+  
+  dword WhlDirRotlFrntSigGrpArr[12] = {0,0,0,0,0,0,328,263,271,552,128,0};
+  char WhlDirRotlFrntSigGrpName[50] = "WhlDirRotlFrnt";
+  byte WhlDirRotlFrntSigGrpChkdElements[2][3]={
+    {33,3,2},
+    {33,1,2}
+  };
+  
+  dword WhlDirRotlReSigGrpArr[12] = {0,0,0,0,0,0,423,279,283,551,128,0};
+  char WhlDirRotlReSigGrpName[50] = "WhlDirRotlRe";
+  byte WhlDirRotlReSigGrpChkdElements[2][3]={
+    {35,7,2},
+    {35,5,2}
+  };
+  
+  dword WhlRotToothCntrSigGrpArr[12] = {0,0,0,0,0,0,444,455,443,6600,128,0};
+  char WhlRotToothCntrSigGrpName[50] = "WhlRotToothCntr";
+  byte WhlRotToothCntrSigGrpChkdElements[4][3]={
+    {57,7,8},
+    {58,7,8},
+    {59,7,8},
+    {60,7,8}
+  };
+  
+  dword WhlSpdCircumlFrntSigGrpArr[12] = {0,0,0,0,0,0,375,391,399,111,128,0};
+  char WhlSpdCircumlFrntSigGrpName[50] = "WhlSpdCircumlFrnt";
+  byte WhlSpdCircumlFrntSigGrpChkdElements[6][3]={
+    {47,7,8},
+    {46,6,7},
+    {49,3,2},
+    {49,1,2},
+    {51,7,7},
+    {50,7,8}
+  };
+  
+  dword WhlSpdCircumlReSigGrpArr[12] = {0,0,0,0,0,0,295,311,319,124,128,0};
+  char WhlSpdCircumlReSigGrpName[50] = "WhlSpdCircumlRe";
+  byte WhlSpdCircumlReSigGrpChkdElements[6][3]={
+    {37,7,8},
+    {36,6,7},
+    {39,3,2},
+    {41,7,7},
+    {40,7,8},
+    {39,1,2}
+  };
+  
+  //PAS4 Tx msg
+  dword EngRunngReqByParkAssiSigGrpArr[12]={0,0,0,0,0,0,174,183,171,15,96,0};
+  char EngRunngReqByParkAssiSigGrpName[50] = "EngRunngReqByParkAssi";
+  byte EngRunngReqByParkAssiSigGrpChkdElements[1][3]={
+    {21,5,2}
+  };
+  
+  dword GearPrkgAssiReqGroupSigGrpArr[12]={0,0,0,0,0,0,25,23,31,2,96,0};
+  char GearPrkgAssiReqGroupSigGrpName[50] = "GearPrkgAssiReqGroup";
+  byte GearPrkgAssiReqGroupSigGrpChkdElements[1][3]={
+    {3,3,2}
+  };
+  
+  dword MobDevRPAAuthentReqSigGrpArr[12]={0,0,0,0,0,0,191,199,187,5100,96,0};
+  char MobDevRPAAuthentReqSigGrpName[50] = "MobDevRPAAuthentReq";
+  byte MobDevRPAAuthentReqSigGrpChkdElements[3][3]={
+    {23,6,3},
+    {25,7,8},
+    {26,7,8}
+  };
+  
+  dword PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[12]={0,0,0,0,0,0,47,55,43,455,96,0};
+  char PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpName[50] = "PrkgAssiElectcStabyProgCtrlModReqGroup";
+  byte PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpChkdElements[1][3]={
+    {5,6,3}
+  };
+  
+  dword PrkgBrkElectcCtrlReqSigGrpArr[12]={0,0,0,0,0,0,6,15,3,555,96,0};
+  char PrkgBrkElectcCtrlReqSigGrpName[50] = "PrkgBrkElectcCtrlReq";
+  byte PrkgBrkElectcCtrlReqSigGrpChkdElements[1][3]={
+    {0,5,2}
+  };
+  
+  dword PrkgSpdCtrlSafeGroupSigGrpArr[12]={0,0,0,0,0,0,152,111,119,60,96,0};
+  char PrkgSpdCtrlSafeGroupSigGrpName[50] = "PrkgSpdCtrlSafeGroup";
+  byte PrkgSpdCtrlSafeGroupSigGrpChkdElements[6][3]={
+    {14,3,2},
+    {15,7,8},
+    {18,7,7},
+    {16,7,8},
+    {17,7,8},
+    {19,7,7}
+  };
+  
+  dword PrkgStandstillReqSigGrpArr[12]={0,0,0,0,0,0,82,79,87,451,96,0};
+  char PrkgStandstillReqSigGrpName[50] = "PrkgStandstillReq";
+  byte PrkgStandstillReqSigGrpChkdElements[1][3]={
+    {10,3,1}
+  };
+}
+
+on message 0x60
+{
+  byte EngRunngReqByParkAssiReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte EngRunngReqByParkAssiReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte EngRunngReqByParkAssiCalculatedChks;    //通过计算得出的Chks的值
+  byte EngRunngReqByParkAssiDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte EngRunngReqByParkAssiUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte GearPrkgAssiReqGroupReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte GearPrkgAssiReqGroupReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte GearPrkgAssiReqGroupCalculatedChks;    //通过计算得出的Chks的值
+  byte GearPrkgAssiReqGroupDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte GearPrkgAssiReqGroupUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte MobDevRPAAuthentReqReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte MobDevRPAAuthentReqReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte MobDevRPAAuthentReqCalculatedChks;    //通过计算得出的Chks的值
+  byte MobDevRPAAuthentReqDataToBeChecked[6];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte MobDevRPAAuthentReqUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte PrkgAssiElectcStabyProgCtrlModReqGroupReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PrkgAssiElectcStabyProgCtrlModReqGroupReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PrkgAssiElectcStabyProgCtrlModReqGroupCalculatedChks;    //通过计算得出的Chks的值
+  byte PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PrkgAssiElectcStabyProgCtrlModReqGroupUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte PrkgBrkElectcCtrlReqReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PrkgBrkElectcCtrlReqReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PrkgBrkElectcCtrlReqCalculatedChks;    //通过计算得出的Chks的值
+  byte PrkgBrkElectcCtrlReqDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PrkgBrkElectcCtrlReqUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte PrkgSpdCtrlSafeGroupReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PrkgSpdCtrlSafeGroupReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PrkgSpdCtrlSafeGroupCalculatedChks;    //通过计算得出的Chks的值
+  byte PrkgSpdCtrlSafeGroupDataToBeChecked[9];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PrkgSpdCtrlSafeGroupUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte PrkgStandstillReqReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PrkgStandstillReqReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PrkgStandstillReqCalculatedChks;    //通过计算得出的Chks的值
+  byte PrkgStandstillReqDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PrkgStandstillReqUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+
+  byte i;
+  byte MessageData[64];
+  dword counter = 1;
+  for(i=0;i<64;i++){MessageData[i]=this.byte(i);}
+
+  //PAS4 Tx msg
+  EngRunngReqByParkAssiUpdateBitValue = this.byte(EngRunngReqByParkAssiSigGrpArr[6]/8) & GetBitValueMask(EngRunngReqByParkAssiSigGrpArr[6]%8);
+  if(EngRunngReqByParkAssiUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    EngRunngReqByParkAssiSigGrpArr[11] = 1;
+    EngRunngReqByParkAssiSigGrpArr[0] ++;
+    EngRunngReqByParkAssiReceivedCntr = GetCntrValue(MessageData,EngRunngReqByParkAssiSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(EngRunngReqByParkAssiSigGrpArr,EngRunngReqByParkAssiReceivedCntr,EngRunngReqByParkAssiSigGrpName,this.time);
+    //检查Chks是否正确，
+    EngRunngReqByParkAssiReceivedChks = GetChksValue(MessageData,EngRunngReqByParkAssiSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    EngRunngReqByParkAssiDataToBeChecked[0] = EngRunngReqByParkAssiSigGrpArr[9]&0xFF;//取DataID的低字节
+    EngRunngReqByParkAssiDataToBeChecked[1] = EngRunngReqByParkAssiSigGrpArr[9]>>8;  //取DataID的高字节
+    EngRunngReqByParkAssiDataToBeChecked[2] = EngRunngReqByParkAssiReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(EngRunngReqByParkAssiSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        EngRunngReqByParkAssiDataToBeChecked[i] = GetElementValue(MessageData,EngRunngReqByParkAssiSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    EngRunngReqByParkAssiCalculatedChks = Crc_CalculateCRC8(EngRunngReqByParkAssiDataToBeChecked,elCount(EngRunngReqByParkAssiDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", EngRunngReqByParkAssiCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( EngRunngReqByParkAssiCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(EngRunngReqByParkAssiSigGrpArr,EngRunngReqByParkAssiCalculatedChks,EngRunngReqByParkAssiReceivedChks,EngRunngReqByParkAssiSigGrpName,this.time);
+  }
+  
+  GearPrkgAssiReqGroupUpdateBitValue = this.byte(GearPrkgAssiReqGroupSigGrpArr[6]/8) & GetBitValueMask(GearPrkgAssiReqGroupSigGrpArr[6]%8);
+  if(GearPrkgAssiReqGroupUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    GearPrkgAssiReqGroupSigGrpArr[11] = 1;
+    GearPrkgAssiReqGroupSigGrpArr[0] ++;
+    GearPrkgAssiReqGroupReceivedCntr = GetCntrValue(MessageData,GearPrkgAssiReqGroupSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(GearPrkgAssiReqGroupSigGrpArr,GearPrkgAssiReqGroupReceivedCntr,GearPrkgAssiReqGroupSigGrpName,this.time);
+    //检查Chks是否正确，
+    GearPrkgAssiReqGroupReceivedChks = GetChksValue(MessageData,GearPrkgAssiReqGroupSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    GearPrkgAssiReqGroupDataToBeChecked[0] = GearPrkgAssiReqGroupSigGrpArr[9]&0xFF;//取DataID的低字节
+    GearPrkgAssiReqGroupDataToBeChecked[1] = GearPrkgAssiReqGroupSigGrpArr[9]>>8;  //取DataID的高字节
+    GearPrkgAssiReqGroupDataToBeChecked[2] = GearPrkgAssiReqGroupReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(GearPrkgAssiReqGroupSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        GearPrkgAssiReqGroupDataToBeChecked[i] = GetElementValue(MessageData,GearPrkgAssiReqGroupSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    GearPrkgAssiReqGroupCalculatedChks = Crc_CalculateCRC8(GearPrkgAssiReqGroupDataToBeChecked,elCount(GearPrkgAssiReqGroupDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", GearPrkgAssiReqGroupCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( GearPrkgAssiReqGroupCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(GearPrkgAssiReqGroupSigGrpArr,GearPrkgAssiReqGroupCalculatedChks,GearPrkgAssiReqGroupReceivedChks,GearPrkgAssiReqGroupSigGrpName,this.time);
+  }
+  
+  MobDevRPAAuthentReqUpdateBitValue = this.byte(MobDevRPAAuthentReqSigGrpArr[6]/8) & GetBitValueMask(MobDevRPAAuthentReqSigGrpArr[6]%8);
+  if(MobDevRPAAuthentReqUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    MobDevRPAAuthentReqSigGrpArr[11] = 1;
+    MobDevRPAAuthentReqSigGrpArr[0] ++;
+    MobDevRPAAuthentReqReceivedCntr = GetCntrValue(MessageData,MobDevRPAAuthentReqSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(MobDevRPAAuthentReqSigGrpArr,MobDevRPAAuthentReqReceivedCntr,MobDevRPAAuthentReqSigGrpName,this.time);
+    //检查Chks是否正确，
+    MobDevRPAAuthentReqReceivedChks = GetChksValue(MessageData,MobDevRPAAuthentReqSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    MobDevRPAAuthentReqDataToBeChecked[0] = MobDevRPAAuthentReqSigGrpArr[9]&0xFF;//取DataID的低字节
+    MobDevRPAAuthentReqDataToBeChecked[1] = MobDevRPAAuthentReqSigGrpArr[9]>>8;  //取DataID的高字节
+    MobDevRPAAuthentReqDataToBeChecked[2] = MobDevRPAAuthentReqReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(MobDevRPAAuthentReqSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        MobDevRPAAuthentReqDataToBeChecked[i] = GetElementValue(MessageData,MobDevRPAAuthentReqSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    MobDevRPAAuthentReqCalculatedChks = Crc_CalculateCRC8(MobDevRPAAuthentReqDataToBeChecked,elCount(MobDevRPAAuthentReqDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", MobDevRPAAuthentReqCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( MobDevRPAAuthentReqCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(MobDevRPAAuthentReqSigGrpArr,MobDevRPAAuthentReqCalculatedChks,MobDevRPAAuthentReqReceivedChks,MobDevRPAAuthentReqSigGrpName,this.time);
+  }
+  
+  PrkgAssiElectcStabyProgCtrlModReqGroupUpdateBitValue = this.byte(PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[6]/8) & GetBitValueMask(PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[6]%8);
+  if(PrkgAssiElectcStabyProgCtrlModReqGroupUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[11] = 1;
+    PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[0] ++;
+    PrkgAssiElectcStabyProgCtrlModReqGroupReceivedCntr = GetCntrValue(MessageData,PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr,PrkgAssiElectcStabyProgCtrlModReqGroupReceivedCntr,PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpName,this.time);
+    //检查Chks是否正确，
+    PrkgAssiElectcStabyProgCtrlModReqGroupReceivedChks = GetChksValue(MessageData,PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked[0] = PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[9]&0xFF;//取DataID的低字节
+    PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked[1] = PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr[9]>>8;  //取DataID的高字节
+    PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked[2] = PrkgAssiElectcStabyProgCtrlModReqGroupReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked[i] = GetElementValue(MessageData,PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PrkgAssiElectcStabyProgCtrlModReqGroupCalculatedChks = Crc_CalculateCRC8(PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked,elCount(PrkgAssiElectcStabyProgCtrlModReqGroupDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PrkgAssiElectcStabyProgCtrlModReqGroupCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( PrkgAssiElectcStabyProgCtrlModReqGroupCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr,PrkgAssiElectcStabyProgCtrlModReqGroupCalculatedChks,PrkgAssiElectcStabyProgCtrlModReqGroupReceivedChks,PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpName,this.time);
+  }
+  
+  PrkgBrkElectcCtrlReqUpdateBitValue = this.byte(PrkgBrkElectcCtrlReqSigGrpArr[6]/8) & GetBitValueMask(PrkgBrkElectcCtrlReqSigGrpArr[6]%8);
+  if(PrkgBrkElectcCtrlReqUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PrkgBrkElectcCtrlReqSigGrpArr[11] = 1;
+    PrkgBrkElectcCtrlReqSigGrpArr[0] ++;
+    PrkgBrkElectcCtrlReqReceivedCntr = GetCntrValue(MessageData,PrkgBrkElectcCtrlReqSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PrkgBrkElectcCtrlReqSigGrpArr,PrkgBrkElectcCtrlReqReceivedCntr,PrkgBrkElectcCtrlReqSigGrpName,this.time);
+    //检查Chks是否正确，
+    PrkgBrkElectcCtrlReqReceivedChks = GetChksValue(MessageData,PrkgBrkElectcCtrlReqSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PrkgBrkElectcCtrlReqDataToBeChecked[0] = PrkgBrkElectcCtrlReqSigGrpArr[9]&0xFF;//取DataID的低字节
+    PrkgBrkElectcCtrlReqDataToBeChecked[1] = PrkgBrkElectcCtrlReqSigGrpArr[9]>>8;  //取DataID的高字节
+    PrkgBrkElectcCtrlReqDataToBeChecked[2] = PrkgBrkElectcCtrlReqReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PrkgBrkElectcCtrlReqSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PrkgBrkElectcCtrlReqDataToBeChecked[i] = GetElementValue(MessageData,PrkgBrkElectcCtrlReqSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PrkgBrkElectcCtrlReqCalculatedChks = Crc_CalculateCRC8(PrkgBrkElectcCtrlReqDataToBeChecked,elCount(PrkgBrkElectcCtrlReqDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PrkgBrkElectcCtrlReqCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( PrkgBrkElectcCtrlReqCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PrkgBrkElectcCtrlReqSigGrpArr,PrkgBrkElectcCtrlReqCalculatedChks,PrkgBrkElectcCtrlReqReceivedChks,PrkgBrkElectcCtrlReqSigGrpName,this.time);
+  }
+  
+  PrkgSpdCtrlSafeGroupUpdateBitValue = this.byte(PrkgSpdCtrlSafeGroupSigGrpArr[6]/8) & GetBitValueMask(PrkgSpdCtrlSafeGroupSigGrpArr[6]%8);
+  if(PrkgSpdCtrlSafeGroupUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PrkgSpdCtrlSafeGroupSigGrpArr[11] = 1;
+    PrkgSpdCtrlSafeGroupSigGrpArr[0] ++;
+    PrkgSpdCtrlSafeGroupReceivedCntr = GetCntrValue(MessageData,PrkgSpdCtrlSafeGroupSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PrkgSpdCtrlSafeGroupSigGrpArr,PrkgSpdCtrlSafeGroupReceivedCntr,PrkgSpdCtrlSafeGroupSigGrpName,this.time);
+    //检查Chks是否正确，
+    PrkgSpdCtrlSafeGroupReceivedChks = GetChksValue(MessageData,PrkgSpdCtrlSafeGroupSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PrkgSpdCtrlSafeGroupDataToBeChecked[0] = PrkgSpdCtrlSafeGroupSigGrpArr[9]&0xFF;//取DataID的低字节
+    PrkgSpdCtrlSafeGroupDataToBeChecked[1] = PrkgSpdCtrlSafeGroupSigGrpArr[9]>>8;  //取DataID的高字节
+    PrkgSpdCtrlSafeGroupDataToBeChecked[2] = PrkgSpdCtrlSafeGroupReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PrkgSpdCtrlSafeGroupSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PrkgSpdCtrlSafeGroupDataToBeChecked[i] = GetElementValue(MessageData,PrkgSpdCtrlSafeGroupSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PrkgSpdCtrlSafeGroupCalculatedChks = Crc_CalculateCRC8(PrkgSpdCtrlSafeGroupDataToBeChecked,elCount(PrkgSpdCtrlSafeGroupDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PrkgSpdCtrlSafeGroupCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( PrkgSpdCtrlSafeGroupCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PrkgSpdCtrlSafeGroupSigGrpArr,PrkgSpdCtrlSafeGroupCalculatedChks,PrkgSpdCtrlSafeGroupReceivedChks,PrkgSpdCtrlSafeGroupSigGrpName,this.time);
+  }
+  
+  PrkgStandstillReqUpdateBitValue = this.byte(PrkgStandstillReqSigGrpArr[6]/8) & GetBitValueMask(PrkgStandstillReqSigGrpArr[6]%8);
+  if(PrkgStandstillReqUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PrkgStandstillReqSigGrpArr[11] = 1;
+    PrkgStandstillReqSigGrpArr[0] ++;
+    PrkgStandstillReqReceivedCntr = GetCntrValue(MessageData,PrkgStandstillReqSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PrkgStandstillReqSigGrpArr,PrkgStandstillReqReceivedCntr,PrkgStandstillReqSigGrpName,this.time);
+    //检查Chks是否正确，
+    PrkgStandstillReqReceivedChks = GetChksValue(MessageData,PrkgStandstillReqSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PrkgStandstillReqDataToBeChecked[0] = PrkgStandstillReqSigGrpArr[9]&0xFF;//取DataID的低字节
+    PrkgStandstillReqDataToBeChecked[1] = PrkgStandstillReqSigGrpArr[9]>>8;  //取DataID的高字节
+    PrkgStandstillReqDataToBeChecked[2] = PrkgStandstillReqReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PrkgStandstillReqSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PrkgStandstillReqDataToBeChecked[i] = GetElementValue(MessageData,PrkgStandstillReqSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PrkgStandstillReqCalculatedChks = Crc_CalculateCRC8(PrkgStandstillReqDataToBeChecked,elCount(PrkgStandstillReqDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PrkgStandstillReqCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( PrkgStandstillReqCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PrkgStandstillReqSigGrpArr,PrkgStandstillReqCalculatedChks,PrkgStandstillReqReceivedChks,PrkgStandstillReqSigGrpName,this.time);
+  }
+}
+
+on message 0x65
+{
+  byte VehSpdLgtReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte VehSpdLgtReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte VehSpdLgtCalculatedChks;    //通过计算得出的Chks的值
+  byte VehSpdLgtDataToBeChecked[6];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte VehSpdLgtUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte EngSt1WdStsReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte EngSt1WdStsReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte EngSt1WdStsCalculatedChks;    //通过计算得出的Chks的值
+  byte EngSt1WdStsDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte EngSt1WdStsUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte EscStReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte EscStReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte EscStCalculatedChks;    //通过计算得出的Chks的值
+  byte EscStDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte EscStUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte GuestrStsReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte GuestrStsReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte GuestrStsCalculatedChks;    //通过计算得出的Chks的值
+  byte GuestrStsDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte GuestrStsUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte PrkLatLgtFailrReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte PrkLatLgtFailrReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte PrkLatLgtFailrCalculatedChks;    //通过计算得出的Chks的值
+  byte PrkLatLgtFailrDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte PrkLatLgtFailrUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte VehMtnStReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte VehMtnStReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte VehMtnStCalculatedChks;    //通过计算得出的Chks的值
+  byte VehMtnStDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte VehMtnStUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+
+  byte i;
+  byte MessageData[64];
+  dword counter = 1;
+  for(i=0;i<64;i++){MessageData[i]=this.byte(i);}
+
+
+  VehSpdLgtUpdateBitValue = this.byte(VehSpdLgtSigGrpArr[6]/8) & GetBitValueMask(VehSpdLgtSigGrpArr[6]%8);
+  if(VehSpdLgtUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    VehSpdLgtSigGrpArr[11] = 1;
+    VehSpdLgtSigGrpArr[0] ++;
+    VehSpdLgtReceivedCntr = GetCntrValue(MessageData,VehSpdLgtSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(VehSpdLgtSigGrpArr,VehSpdLgtReceivedCntr,VehSpdLgtSigGrpName,this.time);
+    //检查Chks是否正确，
+    VehSpdLgtReceivedChks = GetChksValue(MessageData,VehSpdLgtSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    VehSpdLgtDataToBeChecked[0] = VehSpdLgtSigGrpArr[9]&0xFF;//取DataID的低字节
+    VehSpdLgtDataToBeChecked[1] = VehSpdLgtSigGrpArr[9]>>8;  //取DataID的高字节
+    VehSpdLgtDataToBeChecked[2] = VehSpdLgtReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(VehSpdLgtSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        VehSpdLgtDataToBeChecked[i] = GetElementValue(MessageData,VehSpdLgtSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    VehSpdLgtCalculatedChks = Crc_CalculateCRC8(VehSpdLgtDataToBeChecked,elCount(VehSpdLgtDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", VehSpdLgtCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( VehSpdLgtCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(VehSpdLgtSigGrpArr,VehSpdLgtCalculatedChks,VehSpdLgtReceivedChks,VehSpdLgtSigGrpName,this.time);
+  }
+  
+  EngSt1WdStsUpdateBitValue = this.byte(EngSt1WdStsSigGrpArr[6]/8) & GetBitValueMask(EngSt1WdStsSigGrpArr[6]%8);
+  if(EngSt1WdStsUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    EngSt1WdStsSigGrpArr[11] = 1;
+    EngSt1WdStsSigGrpArr[0] ++;
+    EngSt1WdStsReceivedCntr = GetCntrValue(MessageData,EngSt1WdStsSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(EngSt1WdStsSigGrpArr,EngSt1WdStsReceivedCntr,EngSt1WdStsSigGrpName,this.time);
+    //检查Chks是否正确，
+    EngSt1WdStsReceivedChks = GetChksValue(MessageData,EngSt1WdStsSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    EngSt1WdStsDataToBeChecked[0] = EngSt1WdStsSigGrpArr[9]&0xFF;//取DataID的低字节
+    EngSt1WdStsDataToBeChecked[1] = EngSt1WdStsSigGrpArr[9]>>8;  //取DataID的高字节
+    EngSt1WdStsDataToBeChecked[2] = EngSt1WdStsReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(EngSt1WdStsSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        EngSt1WdStsDataToBeChecked[i] = GetElementValue(MessageData,EngSt1WdStsSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    EngSt1WdStsCalculatedChks = Crc_CalculateCRC8(EngSt1WdStsDataToBeChecked,elCount(EngSt1WdStsDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", EngSt1WdStsCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( EngSt1WdStsCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(EngSt1WdStsSigGrpArr,EngSt1WdStsCalculatedChks,EngSt1WdStsReceivedChks,EngSt1WdStsSigGrpName,this.time);
+  }
+  
+  EscStUpdateBitValue = this.byte(EscStSigGrpArr[6]/8) & GetBitValueMask(EscStSigGrpArr[6]%8);
+  if(EscStUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    EscStSigGrpArr[11] = 1;
+    EscStSigGrpArr[0] ++;
+    EscStReceivedCntr = GetCntrValue(MessageData,EscStSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(EscStSigGrpArr,EscStReceivedCntr,EscStSigGrpName,this.time);
+    //检查Chks是否正确，
+    EscStReceivedChks = GetChksValue(MessageData,EscStSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    EscStDataToBeChecked[0] = EscStSigGrpArr[9]&0xFF;//取DataID的低字节
+    EscStDataToBeChecked[1] = EscStSigGrpArr[9]>>8;  //取DataID的高字节
+    EscStDataToBeChecked[2] = EscStReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(EscStSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        EscStDataToBeChecked[i] = GetElementValue(MessageData,EscStSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    EscStCalculatedChks = Crc_CalculateCRC8(EscStDataToBeChecked,elCount(EscStDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", EscStCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( EscStCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(EscStSigGrpArr,EscStCalculatedChks,EscStReceivedChks,EscStSigGrpName,this.time);
+  }
+  
+  GuestrStsUpdateBitValue = this.byte(GuestrStsSigGrpArr[6]/8) & GetBitValueMask(GuestrStsSigGrpArr[6]%8);
+  if(GuestrStsUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    GuestrStsSigGrpArr[11] = 1;
+    GuestrStsSigGrpArr[0] ++;
+    GuestrStsReceivedCntr = GetCntrValue(MessageData,GuestrStsSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(GuestrStsSigGrpArr,GuestrStsReceivedCntr,GuestrStsSigGrpName,this.time);
+    //检查Chks是否正确，
+    GuestrStsReceivedChks = GetChksValue(MessageData,GuestrStsSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    GuestrStsDataToBeChecked[0] = GuestrStsSigGrpArr[9]&0xFF;//取DataID的低字节
+    GuestrStsDataToBeChecked[1] = GuestrStsSigGrpArr[9]>>8;  //取DataID的高字节
+    GuestrStsDataToBeChecked[2] = GuestrStsReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(GuestrStsSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        GuestrStsDataToBeChecked[i] = GetElementValue(MessageData,GuestrStsSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    GuestrStsCalculatedChks = Crc_CalculateCRC8(GuestrStsDataToBeChecked,elCount(GuestrStsDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", GuestrStsCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( GuestrStsCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(GuestrStsSigGrpArr,GuestrStsCalculatedChks,GuestrStsReceivedChks,GuestrStsSigGrpName,this.time);
+  }
+  
+  PrkLatLgtFailrUpdateBitValue = this.byte(PrkLatLgtFailrSigGrpArr[6]/8) & GetBitValueMask(PrkLatLgtFailrSigGrpArr[6]%8);
+  if(PrkLatLgtFailrUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    PrkLatLgtFailrSigGrpArr[11] = 1;
+    PrkLatLgtFailrSigGrpArr[0] ++;
+    PrkLatLgtFailrReceivedCntr = GetCntrValue(MessageData,PrkLatLgtFailrSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(PrkLatLgtFailrSigGrpArr,PrkLatLgtFailrReceivedCntr,PrkLatLgtFailrSigGrpName,this.time);
+    //检查Chks是否正确，
+    PrkLatLgtFailrReceivedChks = GetChksValue(MessageData,PrkLatLgtFailrSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    PrkLatLgtFailrDataToBeChecked[0] = PrkLatLgtFailrSigGrpArr[9]&0xFF;//取DataID的低字节
+    PrkLatLgtFailrDataToBeChecked[1] = PrkLatLgtFailrSigGrpArr[9]>>8;  //取DataID的高字节
+    PrkLatLgtFailrDataToBeChecked[2] = PrkLatLgtFailrReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(PrkLatLgtFailrSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        PrkLatLgtFailrDataToBeChecked[i] = GetElementValue(MessageData,PrkLatLgtFailrSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    PrkLatLgtFailrCalculatedChks = Crc_CalculateCRC8(PrkLatLgtFailrDataToBeChecked,elCount(PrkLatLgtFailrDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", PrkLatLgtFailrCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( PrkLatLgtFailrCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(PrkLatLgtFailrSigGrpArr,PrkLatLgtFailrCalculatedChks,PrkLatLgtFailrReceivedChks,PrkLatLgtFailrSigGrpName,this.time);
+  }
+  
+  VehMtnStUpdateBitValue = this.byte(VehMtnStSigGrpArr[6]/8) & GetBitValueMask(VehMtnStSigGrpArr[6]%8);
+  if(VehMtnStUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    VehMtnStSigGrpArr[11] = 1;
+    VehMtnStSigGrpArr[0] ++;
+    VehMtnStReceivedCntr = GetCntrValue(MessageData,VehMtnStSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(VehMtnStSigGrpArr,VehMtnStReceivedCntr,VehMtnStSigGrpName,this.time);
+    //检查Chks是否正确，
+    VehMtnStReceivedChks = GetChksValue(MessageData,VehMtnStSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    VehMtnStDataToBeChecked[0] = VehMtnStSigGrpArr[9]&0xFF;//取DataID的低字节
+    VehMtnStDataToBeChecked[1] = VehMtnStSigGrpArr[9]>>8;  //取DataID的高字节
+    VehMtnStDataToBeChecked[2] = VehMtnStReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(VehMtnStSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        VehMtnStDataToBeChecked[i] = GetElementValue(MessageData,VehMtnStSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    VehMtnStCalculatedChks = Crc_CalculateCRC8(VehMtnStDataToBeChecked,elCount(VehMtnStDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", VehMtnStCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( VehMtnStCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(VehMtnStSigGrpArr,VehMtnStCalculatedChks,VehMtnStReceivedChks,VehMtnStSigGrpName,this.time);
+  }
+}
+
+on message 0x69
+{
+  byte AsyALgtCtrlModReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte AsyALgtCtrlModReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte AsyALgtCtrlModCalculatedChks;    //通过计算得出的Chks的值
+  byte AsyALgtCtrlModDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte AsyALgtCtrlModUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte AsyALgtCtrlModCfmdReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte AsyALgtCtrlModCfmdReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte AsyALgtCtrlModCfmdCalculatedChks;    //通过计算得出的Chks的值
+  byte AsyALgtCtrlModCfmdDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte AsyALgtCtrlModCfmdUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte AsyLatCtrlModReqGroupReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte AsyLatCtrlModReqGroupReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte AsyLatCtrlModReqGroupCalculatedChks;    //通过计算得出的Chks的值
+  byte AsyLatCtrlModReqGroupDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte AsyLatCtrlModReqGroupUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte AsyLatCtrlModReqGroupCfmdReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte AsyLatCtrlModReqGroupCfmdReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte AsyLatCtrlModReqGroupCfmdCalculatedChks;    //通过计算得出的Chks的值
+  byte AsyLatCtrlModReqGroupCfmdDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte AsyLatCtrlModReqGroupCfmdUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte EpbStsReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte EpbStsReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte EpbStsCalculatedChks;    //通过计算得出的Chks的值
+  byte EpbStsDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte EpbStsUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte MobDevRPAAuthRespReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte MobDevRPAAuthRespReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte MobDevRPAAuthRespCalculatedChks;    //通过计算得出的Chks的值
+  byte MobDevRPAAuthRespDataToBeChecked[7];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte MobDevRPAAuthRespUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte VehModMngtGlbSafe1ReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte VehModMngtGlbSafe1ReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte VehModMngtGlbSafe1CalculatedChks;    //通过计算得出的Chks的值
+  byte VehModMngtGlbSafe1DataToBeChecked[11];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID
+  byte VehModMngtGlbSafe1UpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte i;
+  byte MessageData[64];
+  dword counter = 1;
+  for(i=0;i<64;i++){MessageData[i]=this.byte(i);}
+
+
+  AsyALgtCtrlModUpdateBitValue = this.byte(AsyALgtCtrlModSigGrpArr[6]/8) & GetBitValueMask(AsyALgtCtrlModSigGrpArr[6]%8);
+  if(AsyALgtCtrlModUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    AsyALgtCtrlModSigGrpArr[11] = 1;
+    AsyALgtCtrlModSigGrpArr[0] ++;
+    AsyALgtCtrlModReceivedCntr = GetCntrValue(MessageData,AsyALgtCtrlModSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(AsyALgtCtrlModSigGrpArr,AsyALgtCtrlModReceivedCntr,AsyALgtCtrlModSigGrpName,this.time);
+    //检查Chks是否正确，
+    AsyALgtCtrlModReceivedChks = GetChksValue(MessageData,AsyALgtCtrlModSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    AsyALgtCtrlModDataToBeChecked[0] = AsyALgtCtrlModSigGrpArr[9]&0xFF;//取DataID的低字节
+    AsyALgtCtrlModDataToBeChecked[1] = AsyALgtCtrlModSigGrpArr[9]>>8;  //取DataID的高字节
+    AsyALgtCtrlModDataToBeChecked[2] = AsyALgtCtrlModReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(AsyALgtCtrlModSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        AsyALgtCtrlModDataToBeChecked[i] = GetElementValue(MessageData,AsyALgtCtrlModSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    AsyALgtCtrlModCalculatedChks = Crc_CalculateCRC8(AsyALgtCtrlModDataToBeChecked,elCount(AsyALgtCtrlModDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", AsyALgtCtrlModCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( AsyALgtCtrlModCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(AsyALgtCtrlModSigGrpArr,AsyALgtCtrlModCalculatedChks,AsyALgtCtrlModReceivedChks,AsyALgtCtrlModSigGrpName,this.time);
+  }
+  
+  AsyALgtCtrlModCfmdUpdateBitValue = this.byte(AsyALgtCtrlModCfmdSigGrpArr[6]/8) & GetBitValueMask(AsyALgtCtrlModCfmdSigGrpArr[6]%8);
+  if(AsyALgtCtrlModCfmdUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    AsyALgtCtrlModCfmdSigGrpArr[11] = 1;
+    AsyALgtCtrlModCfmdSigGrpArr[0] ++;
+    AsyALgtCtrlModCfmdReceivedCntr = GetCntrValue(MessageData,AsyALgtCtrlModCfmdSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(AsyALgtCtrlModCfmdSigGrpArr,AsyALgtCtrlModCfmdReceivedCntr,AsyALgtCtrlModCfmdSigGrpName,this.time);
+    //检查Chks是否正确，
+    AsyALgtCtrlModCfmdReceivedChks = GetChksValue(MessageData,AsyALgtCtrlModCfmdSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    AsyALgtCtrlModCfmdDataToBeChecked[0] = AsyALgtCtrlModCfmdSigGrpArr[9]&0xFF;//取DataID的低字节
+    AsyALgtCtrlModCfmdDataToBeChecked[1] = AsyALgtCtrlModCfmdSigGrpArr[9]>>8;  //取DataID的高字节
+    AsyALgtCtrlModCfmdDataToBeChecked[2] = AsyALgtCtrlModCfmdReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(AsyALgtCtrlModCfmdSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        AsyALgtCtrlModCfmdDataToBeChecked[i] = GetElementValue(MessageData,AsyALgtCtrlModCfmdSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    AsyALgtCtrlModCfmdCalculatedChks = Crc_CalculateCRC8(AsyALgtCtrlModCfmdDataToBeChecked,elCount(AsyALgtCtrlModCfmdDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", AsyALgtCtrlModCfmdCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( AsyALgtCtrlModCfmdCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(AsyALgtCtrlModCfmdSigGrpArr,AsyALgtCtrlModCfmdCalculatedChks,AsyALgtCtrlModCfmdReceivedChks,AsyALgtCtrlModCfmdSigGrpName,this.time);
+  }
+  
+  AsyLatCtrlModReqGroupUpdateBitValue = this.byte(AsyLatCtrlModReqGroupSigGrpArr[6]/8) & GetBitValueMask(AsyLatCtrlModReqGroupSigGrpArr[6]%8);
+  if(AsyLatCtrlModReqGroupUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    AsyLatCtrlModReqGroupSigGrpArr[11] = 1;
+    AsyLatCtrlModReqGroupSigGrpArr[0] ++;
+    AsyLatCtrlModReqGroupReceivedCntr = GetCntrValue(MessageData,AsyLatCtrlModReqGroupSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(AsyLatCtrlModReqGroupSigGrpArr,AsyLatCtrlModReqGroupReceivedCntr,AsyLatCtrlModReqGroupSigGrpName,this.time);
+    //检查Chks是否正确，
+    AsyLatCtrlModReqGroupReceivedChks = GetChksValue(MessageData,AsyLatCtrlModReqGroupSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    AsyLatCtrlModReqGroupDataToBeChecked[0] = AsyLatCtrlModReqGroupSigGrpArr[9]&0xFF;//取DataID的低字节
+    AsyLatCtrlModReqGroupDataToBeChecked[1] = AsyLatCtrlModReqGroupSigGrpArr[9]>>8;  //取DataID的高字节
+    AsyLatCtrlModReqGroupDataToBeChecked[2] = AsyLatCtrlModReqGroupReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(AsyLatCtrlModReqGroupSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        AsyLatCtrlModReqGroupDataToBeChecked[i] = GetElementValue(MessageData,AsyLatCtrlModReqGroupSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    AsyLatCtrlModReqGroupCalculatedChks = Crc_CalculateCRC8(AsyLatCtrlModReqGroupDataToBeChecked,elCount(AsyLatCtrlModReqGroupDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", AsyLatCtrlModReqGroupCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( AsyLatCtrlModReqGroupCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(AsyLatCtrlModReqGroupSigGrpArr,AsyLatCtrlModReqGroupCalculatedChks,AsyLatCtrlModReqGroupReceivedChks,AsyLatCtrlModReqGroupSigGrpName,this.time);
+  }
+  
+  AsyLatCtrlModReqGroupCfmdUpdateBitValue = this.byte(AsyLatCtrlModReqGroupCfmdSigGrpArr[6]/8) & GetBitValueMask(AsyLatCtrlModReqGroupCfmdSigGrpArr[6]%8);
+  if(AsyLatCtrlModReqGroupCfmdUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    AsyLatCtrlModReqGroupCfmdSigGrpArr[11] = 1;
+    AsyLatCtrlModReqGroupCfmdSigGrpArr[0] ++;
+    AsyLatCtrlModReqGroupCfmdReceivedCntr = GetCntrValue(MessageData,AsyLatCtrlModReqGroupCfmdSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(AsyLatCtrlModReqGroupCfmdSigGrpArr,AsyLatCtrlModReqGroupCfmdReceivedCntr,AsyLatCtrlModReqGroupCfmdSigGrpName,this.time);
+    //检查Chks是否正确，
+    AsyLatCtrlModReqGroupCfmdReceivedChks = GetChksValue(MessageData,AsyLatCtrlModReqGroupCfmdSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    AsyLatCtrlModReqGroupCfmdDataToBeChecked[0] = AsyLatCtrlModReqGroupCfmdSigGrpArr[9]&0xFF;//取DataID的低字节
+    AsyLatCtrlModReqGroupCfmdDataToBeChecked[1] = AsyLatCtrlModReqGroupCfmdSigGrpArr[9]>>8;  //取DataID的高字节
+    AsyLatCtrlModReqGroupCfmdDataToBeChecked[2] = AsyLatCtrlModReqGroupCfmdReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(AsyLatCtrlModReqGroupCfmdSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        AsyLatCtrlModReqGroupCfmdDataToBeChecked[i] = GetElementValue(MessageData,AsyLatCtrlModReqGroupCfmdSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    AsyLatCtrlModReqGroupCfmdCalculatedChks = Crc_CalculateCRC8(AsyLatCtrlModReqGroupCfmdDataToBeChecked,elCount(AsyLatCtrlModReqGroupCfmdDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", AsyLatCtrlModReqGroupCfmdCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( AsyLatCtrlModReqGroupCfmdCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(AsyLatCtrlModReqGroupCfmdSigGrpArr,AsyLatCtrlModReqGroupCfmdCalculatedChks,AsyLatCtrlModReqGroupCfmdReceivedChks,AsyLatCtrlModReqGroupCfmdSigGrpName,this.time);
+  }
+  
+  EpbStsUpdateBitValue = this.byte(EpbStsSigGrpArr[6]/8) & GetBitValueMask(EpbStsSigGrpArr[6]%8);
+  if(EpbStsUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    EpbStsSigGrpArr[11] = 1;
+    EpbStsSigGrpArr[0] ++;
+    EpbStsReceivedCntr = GetCntrValue(MessageData,EpbStsSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(EpbStsSigGrpArr,EpbStsReceivedCntr,EpbStsSigGrpName,this.time);
+    //检查Chks是否正确，
+    EpbStsReceivedChks = GetChksValue(MessageData,EpbStsSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    EpbStsDataToBeChecked[0] = EpbStsSigGrpArr[9]&0xFF;//取DataID的低字节
+    EpbStsDataToBeChecked[1] = EpbStsSigGrpArr[9]>>8;  //取DataID的高字节
+    EpbStsDataToBeChecked[2] = EpbStsReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(EpbStsSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        EpbStsDataToBeChecked[i] = GetElementValue(MessageData,EpbStsSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    EpbStsCalculatedChks = Crc_CalculateCRC8(EpbStsDataToBeChecked,elCount(EpbStsDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", EpbStsCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( EpbStsCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(EpbStsSigGrpArr,EpbStsCalculatedChks,EpbStsReceivedChks,EpbStsSigGrpName,this.time);
+  }
+  
+  MobDevRPAAuthRespUpdateBitValue = this.byte(MobDevRPAAuthRespSigGrpArr[6]/8) & GetBitValueMask(MobDevRPAAuthRespSigGrpArr[6]%8);
+  if(MobDevRPAAuthRespUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    MobDevRPAAuthRespSigGrpArr[11] = 1;
+    MobDevRPAAuthRespSigGrpArr[0] ++;
+    MobDevRPAAuthRespReceivedCntr = GetCntrValue(MessageData,MobDevRPAAuthRespSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(MobDevRPAAuthRespSigGrpArr,MobDevRPAAuthRespReceivedCntr,MobDevRPAAuthRespSigGrpName,this.time);
+    //检查Chks是否正确，
+    MobDevRPAAuthRespReceivedChks = GetChksValue(MessageData,MobDevRPAAuthRespSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    MobDevRPAAuthRespDataToBeChecked[0] = MobDevRPAAuthRespSigGrpArr[9]&0xFF;//取DataID的低字节
+    MobDevRPAAuthRespDataToBeChecked[1] = MobDevRPAAuthRespSigGrpArr[9]>>8;  //取DataID的高字节
+    MobDevRPAAuthRespDataToBeChecked[2] = MobDevRPAAuthRespReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(MobDevRPAAuthRespSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        MobDevRPAAuthRespDataToBeChecked[i] = GetElementValue(MessageData,MobDevRPAAuthRespSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    MobDevRPAAuthRespCalculatedChks = Crc_CalculateCRC8(MobDevRPAAuthRespDataToBeChecked,elCount(MobDevRPAAuthRespDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", MobDevRPAAuthRespCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( MobDevRPAAuthRespCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(MobDevRPAAuthRespSigGrpArr,MobDevRPAAuthRespCalculatedChks,MobDevRPAAuthRespReceivedChks,MobDevRPAAuthRespSigGrpName,this.time);
+  }
+  
+  VehModMngtGlbSafe1UpdateBitValue = this.byte(VehModMngtGlbSafe1SigGrpArr[6]/8) & GetBitValueMask(VehModMngtGlbSafe1SigGrpArr[6]%8);
+  if(VehModMngtGlbSafe1UpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    VehModMngtGlbSafe1SigGrpArr[11] = 1;
+    VehModMngtGlbSafe1SigGrpArr[0] ++;
+    VehModMngtGlbSafe1ReceivedCntr = GetCntrValue(MessageData,VehModMngtGlbSafe1SigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(VehModMngtGlbSafe1SigGrpArr,VehModMngtGlbSafe1ReceivedCntr,VehModMngtGlbSafe1SigGrpName,this.time);
+    //检查Chks是否正确，
+    VehModMngtGlbSafe1ReceivedChks = GetChksValue(MessageData,VehModMngtGlbSafe1SigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    VehModMngtGlbSafe1DataToBeChecked[0] = VehModMngtGlbSafe1SigGrpArr[9]&0xFF;//取DataID的低字节
+    VehModMngtGlbSafe1DataToBeChecked[1] = VehModMngtGlbSafe1SigGrpArr[9]>>8;  //取DataID的高字节
+    VehModMngtGlbSafe1DataToBeChecked[2] = VehModMngtGlbSafe1ReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(VehModMngtGlbSafe1SigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        VehModMngtGlbSafe1DataToBeChecked[i] = GetElementValue(MessageData,VehModMngtGlbSafe1SigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    VehModMngtGlbSafe1CalculatedChks = Crc_CalculateCRC8(VehModMngtGlbSafe1DataToBeChecked,elCount(VehModMngtGlbSafe1DataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", VehModMngtGlbSafe1CalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( VehModMngtGlbSafe1CalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(VehModMngtGlbSafe1SigGrpArr,VehModMngtGlbSafe1CalculatedChks,VehModMngtGlbSafe1ReceivedChks,VehModMngtGlbSafe1SigGrpName,this.time);
+  }
+}
+
+on message 0x80
+{
+  byte ADataRawSafeReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte ADataRawSafeReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte ADataRawSafeCalculatedChks;    //通过计算得出的Chks的值
+  byte ADataRawSafeDataToBeChecked[13];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte ADataRawSafeUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte AgDataRawSafeReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte AgDataRawSafeReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte AgDataRawSafeCalculatedChks;    //通过计算得出的Chks的值
+  byte AgDataRawSafeDataToBeChecked[9];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte AgDataRawSafeUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte AsyDataWithCmpSafeReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte AsyDataWithCmpSafeReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte AsyDataWithCmpSafeCalculatedChks;    //通过计算得出的Chks的值
+  byte AsyDataWithCmpSafeDataToBeChecked[12];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte AsyDataWithCmpSafeUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte MobDevRPAReqReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte MobDevRPAReqReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte MobDevRPAReqCalculatedChks;    //通过计算得出的Chks的值
+  byte MobDevRPAReqDataToBeChecked[7];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte MobDevRPAReqUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte StandStillMgrStsForHldReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte StandStillMgrStsForHldReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte StandStillMgrStsForHldCalculatedChks;    //通过计算得出的Chks的值
+  byte StandStillMgrStsForHldDataToBeChecked[4];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte StandStillMgrStsForHldUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte WhlDirRotlFrntReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte WhlDirRotlFrntReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte WhlDirRotlFrntCalculatedChks;    //通过计算得出的Chks的值
+  byte WhlDirRotlFrntDataToBeChecked[5];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte WhlDirRotlFrntUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte WhlDirRotlReReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte WhlDirRotlReReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte WhlDirRotlReCalculatedChks;    //通过计算得出的Chks的值
+  byte WhlDirRotlReDataToBeChecked[5];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte WhlDirRotlReUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte WhlRotToothCntrReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte WhlRotToothCntrReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte WhlRotToothCntrCalculatedChks;    //通过计算得出的Chks的值
+  byte WhlRotToothCntrDataToBeChecked[7];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte WhlRotToothCntrUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte WhlSpdCircumlFrntReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte WhlSpdCircumlFrntReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte WhlSpdCircumlFrntCalculatedChks;    //通过计算得出的Chks的值
+  byte WhlSpdCircumlFrntDataToBeChecked[9];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte WhlSpdCircumlFrntUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte WhlSpdCircumlReReceivedChks;      //定义一个变量，用于存储接收到的Chks的值
+  byte WhlSpdCircumlReReceivedCntr;      //定义一个变量，用于存储接收到的Cntr的
+  byte WhlSpdCircumlReCalculatedChks;    //通过计算得出的Chks的值
+  byte WhlSpdCircumlReDataToBeChecked[9];//定义一个变量数组，用于存储用于CRC算法的数据,前两个用来存储DataID，
+  byte WhlSpdCircumlReUpdateBitValue;    //定义一个变量，用于存储UpdateBit的值
+  
+  byte i;
+  byte MessageData[64];
+  dword counter = 1;
+  for(i=0;i<64;i++){MessageData[i]=this.byte(i);}
+
+
+  ADataRawSafeUpdateBitValue = this.byte(ADataRawSafeSigGrpArr[6]/8) & GetBitValueMask(ADataRawSafeSigGrpArr[6]%8);
+  if(ADataRawSafeUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    ADataRawSafeSigGrpArr[11] = 1;
+    ADataRawSafeSigGrpArr[0] ++;
+    ADataRawSafeReceivedCntr = GetCntrValue(MessageData,ADataRawSafeSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(ADataRawSafeSigGrpArr,ADataRawSafeReceivedCntr,ADataRawSafeSigGrpName,this.time);
+    //检查Chks是否正确，
+    ADataRawSafeReceivedChks = GetChksValue(MessageData,ADataRawSafeSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    ADataRawSafeDataToBeChecked[0] = ADataRawSafeSigGrpArr[9]&0xFF;//取DataID的低字节
+    ADataRawSafeDataToBeChecked[1] = ADataRawSafeSigGrpArr[9]>>8;  //取DataID的高字节
+    ADataRawSafeDataToBeChecked[2] = ADataRawSafeReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(ADataRawSafeSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        ADataRawSafeDataToBeChecked[i] = GetElementValue(MessageData,ADataRawSafeSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    ADataRawSafeCalculatedChks = Crc_CalculateCRC8(ADataRawSafeDataToBeChecked,elCount(ADataRawSafeDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", ADataRawSafeCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( ADataRawSafeCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(ADataRawSafeSigGrpArr,ADataRawSafeCalculatedChks,ADataRawSafeReceivedChks,ADataRawSafeSigGrpName,this.time);
+  }
+
+  AgDataRawSafeUpdateBitValue = this.byte(AgDataRawSafeSigGrpArr[6]/8) & GetBitValueMask(AgDataRawSafeSigGrpArr[6]%8);
+  if(AgDataRawSafeUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    AgDataRawSafeSigGrpArr[11] = 1;
+    AgDataRawSafeSigGrpArr[0] ++;
+    AgDataRawSafeReceivedCntr = GetCntrValue(MessageData,AgDataRawSafeSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(AgDataRawSafeSigGrpArr,AgDataRawSafeReceivedCntr,AgDataRawSafeSigGrpName,this.time);
+    //检查Chks是否正确，
+    AgDataRawSafeReceivedChks = GetChksValue(MessageData,AgDataRawSafeSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    AgDataRawSafeDataToBeChecked[0] = AgDataRawSafeSigGrpArr[9]&0xFF;//取DataID的低字节
+    AgDataRawSafeDataToBeChecked[1] = AgDataRawSafeSigGrpArr[9]>>8;  //取DataID的高字节
+    AgDataRawSafeDataToBeChecked[2] = AgDataRawSafeReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(AgDataRawSafeSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        AgDataRawSafeDataToBeChecked[i] = GetElementValue(MessageData,AgDataRawSafeSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    AgDataRawSafeCalculatedChks = Crc_CalculateCRC8(AgDataRawSafeDataToBeChecked,elCount(AgDataRawSafeDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", AgDataRawSafeCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( AgDataRawSafeCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(AgDataRawSafeSigGrpArr,AgDataRawSafeCalculatedChks,AgDataRawSafeReceivedChks,AgDataRawSafeSigGrpName,this.time);
+  }
+  
+  AsyDataWithCmpSafeUpdateBitValue = this.byte(AsyDataWithCmpSafeSigGrpArr[6]/8) & GetBitValueMask(AsyDataWithCmpSafeSigGrpArr[6]%8);
+  if(AsyDataWithCmpSafeUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    AsyDataWithCmpSafeSigGrpArr[11] = 1;
+    AsyDataWithCmpSafeSigGrpArr[0] ++;
+    AsyDataWithCmpSafeReceivedCntr = GetCntrValue(MessageData,AsyDataWithCmpSafeSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(AsyDataWithCmpSafeSigGrpArr,AsyDataWithCmpSafeReceivedCntr,AsyDataWithCmpSafeSigGrpName,this.time);
+    //检查Chks是否正确，
+    AsyDataWithCmpSafeReceivedChks = GetChksValue(MessageData,AsyDataWithCmpSafeSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    AsyDataWithCmpSafeDataToBeChecked[0] = AsyDataWithCmpSafeSigGrpArr[9]&0xFF;//取DataID的低字节
+    AsyDataWithCmpSafeDataToBeChecked[1] = AsyDataWithCmpSafeSigGrpArr[9]>>8;  //取DataID的高字节
+    AsyDataWithCmpSafeDataToBeChecked[2] = AsyDataWithCmpSafeReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(AsyDataWithCmpSafeSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        AsyDataWithCmpSafeDataToBeChecked[i] = GetElementValue(MessageData,AsyDataWithCmpSafeSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    AsyDataWithCmpSafeCalculatedChks = Crc_CalculateCRC8(AsyDataWithCmpSafeDataToBeChecked,elCount(AsyDataWithCmpSafeDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", AsyDataWithCmpSafeCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( AsyDataWithCmpSafeCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(AsyDataWithCmpSafeSigGrpArr,AsyDataWithCmpSafeCalculatedChks,AsyDataWithCmpSafeReceivedChks,AsyDataWithCmpSafeSigGrpName,this.time);
+  }
+  
+  MobDevRPAReqUpdateBitValue = this.byte(MobDevRPAReqSigGrpArr[6]/8) & GetBitValueMask(MobDevRPAReqSigGrpArr[6]%8);
+  if(MobDevRPAReqUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    MobDevRPAReqSigGrpArr[11] = 1;
+    MobDevRPAReqSigGrpArr[0] ++;
+    MobDevRPAReqReceivedCntr = GetCntrValue(MessageData,MobDevRPAReqSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(MobDevRPAReqSigGrpArr,MobDevRPAReqReceivedCntr,MobDevRPAReqSigGrpName,this.time);
+    //检查Chks是否正确，
+    MobDevRPAReqReceivedChks = GetChksValue(MessageData,MobDevRPAReqSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    MobDevRPAReqDataToBeChecked[0] = MobDevRPAReqSigGrpArr[9]&0xFF;//取DataID的低字节
+    MobDevRPAReqDataToBeChecked[1] = MobDevRPAReqSigGrpArr[9]>>8;  //取DataID的高字节
+    MobDevRPAReqDataToBeChecked[2] = MobDevRPAReqReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(MobDevRPAReqSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        MobDevRPAReqDataToBeChecked[i] = GetElementValue(MessageData,MobDevRPAReqSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    MobDevRPAReqCalculatedChks = Crc_CalculateCRC8(MobDevRPAReqDataToBeChecked,elCount(MobDevRPAReqDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", MobDevRPAReqCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( MobDevRPAReqCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(MobDevRPAReqSigGrpArr,MobDevRPAReqCalculatedChks,MobDevRPAReqReceivedChks,MobDevRPAReqSigGrpName,this.time);
+  }
+  
+  StandStillMgrStsForHldUpdateBitValue = this.byte(StandStillMgrStsForHldSigGrpArr[6]/8) & GetBitValueMask(StandStillMgrStsForHldSigGrpArr[6]%8);
+  if(StandStillMgrStsForHldUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    StandStillMgrStsForHldSigGrpArr[11] = 1;
+    StandStillMgrStsForHldSigGrpArr[0] ++;
+    StandStillMgrStsForHldReceivedCntr = GetCntrValue(MessageData,StandStillMgrStsForHldSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(StandStillMgrStsForHldSigGrpArr,StandStillMgrStsForHldReceivedCntr,StandStillMgrStsForHldSigGrpName,this.time);
+    //检查Chks是否正确，
+    StandStillMgrStsForHldReceivedChks = GetChksValue(MessageData,StandStillMgrStsForHldSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    StandStillMgrStsForHldDataToBeChecked[0] = StandStillMgrStsForHldSigGrpArr[9]&0xFF;//取DataID的低字节
+    StandStillMgrStsForHldDataToBeChecked[1] = StandStillMgrStsForHldSigGrpArr[9]>>8;  //取DataID的高字节
+    StandStillMgrStsForHldDataToBeChecked[2] = StandStillMgrStsForHldReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(StandStillMgrStsForHldSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        StandStillMgrStsForHldDataToBeChecked[i] = GetElementValue(MessageData,StandStillMgrStsForHldSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    StandStillMgrStsForHldCalculatedChks = Crc_CalculateCRC8(StandStillMgrStsForHldDataToBeChecked,elCount(StandStillMgrStsForHldDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", StandStillMgrStsForHldCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( StandStillMgrStsForHldCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(StandStillMgrStsForHldSigGrpArr,StandStillMgrStsForHldCalculatedChks,StandStillMgrStsForHldReceivedChks,StandStillMgrStsForHldSigGrpName,this.time);
+  }
+  
+  WhlDirRotlFrntUpdateBitValue = this.byte(WhlDirRotlFrntSigGrpArr[6]/8) & GetBitValueMask(WhlDirRotlFrntSigGrpArr[6]%8);
+  if(WhlDirRotlFrntUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    WhlDirRotlFrntSigGrpArr[11] = 1;
+    WhlDirRotlFrntSigGrpArr[0] ++;
+    WhlDirRotlFrntReceivedCntr = GetCntrValue(MessageData,WhlDirRotlFrntSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(WhlDirRotlFrntSigGrpArr,WhlDirRotlFrntReceivedCntr,WhlDirRotlFrntSigGrpName,this.time);
+    //检查Chks是否正确，
+    WhlDirRotlFrntReceivedChks = GetChksValue(MessageData,WhlDirRotlFrntSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    WhlDirRotlFrntDataToBeChecked[0] = WhlDirRotlFrntSigGrpArr[9]&0xFF;//取DataID的低字节
+    WhlDirRotlFrntDataToBeChecked[1] = WhlDirRotlFrntSigGrpArr[9]>>8;  //取DataID的高字节
+    WhlDirRotlFrntDataToBeChecked[2] = WhlDirRotlFrntReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(WhlDirRotlFrntSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        WhlDirRotlFrntDataToBeChecked[i] = GetElementValue(MessageData,WhlDirRotlFrntSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    WhlDirRotlFrntCalculatedChks = Crc_CalculateCRC8(WhlDirRotlFrntDataToBeChecked,elCount(WhlDirRotlFrntDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", WhlDirRotlFrntCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( WhlDirRotlFrntCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(WhlDirRotlFrntSigGrpArr,WhlDirRotlFrntCalculatedChks,WhlDirRotlFrntReceivedChks,WhlDirRotlFrntSigGrpName,this.time);
+  }
+  
+  WhlDirRotlReUpdateBitValue = this.byte(WhlDirRotlReSigGrpArr[6]/8) & GetBitValueMask(WhlDirRotlReSigGrpArr[6]%8);
+  if(WhlDirRotlReUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    WhlDirRotlReSigGrpArr[11] = 1;
+    WhlDirRotlReSigGrpArr[0] ++;
+    WhlDirRotlReReceivedCntr = GetCntrValue(MessageData,WhlDirRotlReSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(WhlDirRotlReSigGrpArr,WhlDirRotlReReceivedCntr,WhlDirRotlReSigGrpName,this.time);
+    //检查Chks是否正确，
+    WhlDirRotlReReceivedChks = GetChksValue(MessageData,WhlDirRotlReSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    WhlDirRotlReDataToBeChecked[0] = WhlDirRotlReSigGrpArr[9]&0xFF;//取DataID的低字节
+    WhlDirRotlReDataToBeChecked[1] = WhlDirRotlReSigGrpArr[9]>>8;  //取DataID的高字节
+    WhlDirRotlReDataToBeChecked[2] = WhlDirRotlReReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(WhlDirRotlReSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        WhlDirRotlReDataToBeChecked[i] = GetElementValue(MessageData,WhlDirRotlReSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    WhlDirRotlReCalculatedChks = Crc_CalculateCRC8(WhlDirRotlReDataToBeChecked,elCount(WhlDirRotlReDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", WhlDirRotlReCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( WhlDirRotlReCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(WhlDirRotlReSigGrpArr,WhlDirRotlReCalculatedChks,WhlDirRotlReReceivedChks,WhlDirRotlReSigGrpName,this.time);
+  }
+  
+  WhlRotToothCntrUpdateBitValue = this.byte(WhlRotToothCntrSigGrpArr[6]/8) & GetBitValueMask(WhlRotToothCntrSigGrpArr[6]%8);
+  if(WhlRotToothCntrUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    WhlRotToothCntrSigGrpArr[11] = 1;
+    WhlRotToothCntrSigGrpArr[0] ++;
+    WhlRotToothCntrReceivedCntr = GetCntrValue(MessageData,WhlRotToothCntrSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(WhlRotToothCntrSigGrpArr,WhlRotToothCntrReceivedCntr,WhlRotToothCntrSigGrpName,this.time);
+    //检查Chks是否正确，
+    WhlRotToothCntrReceivedChks = GetChksValue(MessageData,WhlRotToothCntrSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    WhlRotToothCntrDataToBeChecked[0] = WhlRotToothCntrSigGrpArr[9]&0xFF;//取DataID的低字节
+    WhlRotToothCntrDataToBeChecked[1] = WhlRotToothCntrSigGrpArr[9]>>8;  //取DataID的高字节
+    WhlRotToothCntrDataToBeChecked[2] = WhlRotToothCntrReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(WhlRotToothCntrSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        WhlRotToothCntrDataToBeChecked[i] = GetElementValue(MessageData,WhlRotToothCntrSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    WhlRotToothCntrCalculatedChks = Crc_CalculateCRC8(WhlRotToothCntrDataToBeChecked,elCount(WhlRotToothCntrDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", WhlRotToothCntrCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( WhlRotToothCntrCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(WhlRotToothCntrSigGrpArr,WhlRotToothCntrCalculatedChks,WhlRotToothCntrReceivedChks,WhlRotToothCntrSigGrpName,this.time);
+  }
+  
+  WhlSpdCircumlFrntUpdateBitValue = this.byte(WhlSpdCircumlFrntSigGrpArr[6]/8) & GetBitValueMask(WhlSpdCircumlFrntSigGrpArr[6]%8);
+  if(WhlSpdCircumlFrntUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    WhlSpdCircumlFrntSigGrpArr[11] = 1;
+    WhlSpdCircumlFrntSigGrpArr[0] ++;
+    WhlSpdCircumlFrntReceivedCntr = GetCntrValue(MessageData,WhlSpdCircumlFrntSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(WhlSpdCircumlFrntSigGrpArr,WhlSpdCircumlFrntReceivedCntr,WhlSpdCircumlFrntSigGrpName,this.time);
+    //检查Chks是否正确，
+    WhlSpdCircumlFrntReceivedChks = GetChksValue(MessageData,WhlSpdCircumlFrntSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    WhlSpdCircumlFrntDataToBeChecked[0] = WhlSpdCircumlFrntSigGrpArr[9]&0xFF;//取DataID的低字节
+    WhlSpdCircumlFrntDataToBeChecked[1] = WhlSpdCircumlFrntSigGrpArr[9]>>8;  //取DataID的高字节
+    WhlSpdCircumlFrntDataToBeChecked[2] = WhlSpdCircumlFrntReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(WhlSpdCircumlFrntSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+        WhlSpdCircumlFrntDataToBeChecked[i] = GetElementValue(MessageData,WhlSpdCircumlFrntSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    WhlSpdCircumlFrntCalculatedChks = Crc_CalculateCRC8(WhlSpdCircumlFrntDataToBeChecked,elCount(WhlSpdCircumlFrntDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", WhlSpdCircumlFrntCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( WhlSpdCircumlFrntCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(WhlSpdCircumlFrntSigGrpArr,WhlSpdCircumlFrntCalculatedChks,WhlSpdCircumlFrntReceivedChks,WhlSpdCircumlFrntSigGrpName,this.time);
+  }
+  
+  WhlSpdCircumlReUpdateBitValue = this.byte(WhlSpdCircumlReSigGrpArr[6]/8) & GetBitValueMask(WhlSpdCircumlReSigGrpArr[6]%8);
+  if(WhlSpdCircumlReUpdateBitValue!=0)//只有UB=1的情况下才判断
+  {
+    WhlSpdCircumlReSigGrpArr[11] = 1;
+    WhlSpdCircumlReSigGrpArr[0] ++;
+    WhlSpdCircumlReReceivedCntr = GetCntrValue(MessageData,WhlSpdCircumlReSigGrpArr[8]);//Cntr赋值
+    //检查Cntr是否有无效值，是否有不连续现象
+    CntrChecksFunction(WhlSpdCircumlReSigGrpArr,WhlSpdCircumlReReceivedCntr,WhlSpdCircumlReSigGrpName,this.time);
+    //检查Chks是否正确，
+    WhlSpdCircumlReReceivedChks = GetChksValue(MessageData,WhlSpdCircumlReSigGrpArr[7]);
+
+    //给DataToBeChecked数组赋值
+    WhlSpdCircumlReDataToBeChecked[0] = WhlSpdCircumlReSigGrpArr[9]&0xFF;//取DataID的低字节
+    WhlSpdCircumlReDataToBeChecked[1] = WhlSpdCircumlReSigGrpArr[9]>>8;  //取DataID的高字节
+    WhlSpdCircumlReDataToBeChecked[2] = WhlSpdCircumlReReceivedCntr;  //Cntr的值
+    for(i=3;i<(elcount(WhlSpdCircumlReSigGrpChkdElements)+3);i++) //这个地方确认一下循环次数有没有少
+    {
+      WhlSpdCircumlReDataToBeChecked[i] = GetElementValue(MessageData,WhlSpdCircumlReSigGrpChkdElements,i-3);
+    }
+    //计算正确的CRC值
+    WhlSpdCircumlReCalculatedChks = Crc_CalculateCRC8(WhlSpdCircumlReDataToBeChecked,elCount(WhlSpdCircumlReDataToBeChecked),0x00);
+//    write("enter num = %lu", counter++);
+//    write("crc = %#x", WhlSpdCircumlReCalculatedChks);
+//    write("chk = %#x", this.byte(35));
+//    write("************************************");
+    
+//    if( WhlSpdCircumlReCalculatedChks != this.byte(35))
+//      stop();
+    //比对计算的和接收到的CRC值，若错误则增加错误计数，若同时是第一次发生错误，则输出Write窗口报错
+    ChksChecksFunction(WhlSpdCircumlReSigGrpArr,WhlSpdCircumlReCalculatedChks,WhlSpdCircumlReReceivedChks,WhlSpdCircumlReSigGrpName,this.time);
+  }
+}
+
+on StopMeasurement
+{
+  //PAS4 Rx msg
+  FinalReportFunction(ADataRawSafeSigGrpArr,ADataRawSafeSigGrpName);
+  FinalReportFunction(AgDataRawSafeSigGrpArr,AgDataRawSafeSigGrpName);
+  FinalReportFunction(AsyALgtCtrlModSigGrpArr,AsyALgtCtrlModSigGrpName);
+  FinalReportFunction(AsyALgtCtrlModCfmdSigGrpArr,AsyALgtCtrlModCfmdSigGrpName);
+  FinalReportFunction(AsyDataWithCmpSafeSigGrpArr,AsyDataWithCmpSafeSigGrpName);
+  FinalReportFunction(AsyLatCtrlModReqGroupSigGrpArr,AsyLatCtrlModReqGroupSigGrpName);
+  FinalReportFunction(AsyLatCtrlModReqGroupCfmdSigGrpArr,AsyLatCtrlModReqGroupCfmdSigGrpName);
+  FinalReportFunction(EngSt1WdStsSigGrpArr,EngSt1WdStsSigGrpName);
+  FinalReportFunction(EpbStsSigGrpArr,EpbStsSigGrpName);
+  FinalReportFunction(EscStSigGrpArr,EscStSigGrpName);
+  FinalReportFunction(GuestrStsSigGrpArr,GuestrStsSigGrpName);
+  FinalReportFunction(VehSpdLgtSigGrpArr,VehSpdLgtSigGrpName);
+  FinalReportFunction(MobDevRPAAuthRespSigGrpArr,MobDevRPAAuthRespSigGrpName);
+  FinalReportFunction(MobDevRPAReqSigGrpArr,MobDevRPAReqSigGrpName);
+  FinalReportFunction(PrkLatLgtFailrSigGrpArr,PrkLatLgtFailrSigGrpName);
+  FinalReportFunction(StandStillMgrStsForHldSigGrpArr,StandStillMgrStsForHldSigGrpName);
+  FinalReportFunction(VehModMngtGlbSafe1SigGrpArr,VehModMngtGlbSafe1SigGrpName);
+  FinalReportFunction(VehMtnStSigGrpArr,VehMtnStSigGrpName);
+  FinalReportFunction(WhlDirRotlFrntSigGrpArr,WhlDirRotlFrntSigGrpName);
+  FinalReportFunction(WhlDirRotlReSigGrpArr,WhlDirRotlReSigGrpName);
+  FinalReportFunction(WhlRotToothCntrSigGrpArr,WhlRotToothCntrSigGrpName);
+  FinalReportFunction(WhlSpdCircumlFrntSigGrpArr,WhlSpdCircumlFrntSigGrpName);
+  FinalReportFunction(WhlSpdCircumlReSigGrpArr,WhlSpdCircumlReSigGrpName);
+  //PAS4 Tx msg
+  FinalReportFunction(EngRunngReqByParkAssiSigGrpArr,EngRunngReqByParkAssiSigGrpName);
+  FinalReportFunction(GearPrkgAssiReqGroupSigGrpArr,GearPrkgAssiReqGroupSigGrpName);
+  FinalReportFunction(MobDevRPAAuthentReqSigGrpArr,MobDevRPAAuthentReqSigGrpName);
+  FinalReportFunction(PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpArr,PrkgAssiElectcStabyProgCtrlModReqGroupSigGrpName);
+  FinalReportFunction(PrkgBrkElectcCtrlReqSigGrpArr,PrkgBrkElectcCtrlReqSigGrpName);
+  FinalReportFunction(PrkgSpdCtrlSafeGroupSigGrpArr,PrkgSpdCtrlSafeGroupSigGrpName);
+  FinalReportFunction(PrkgStandstillReqSigGrpArr,PrkgStandstillReqSigGrpName);
+}

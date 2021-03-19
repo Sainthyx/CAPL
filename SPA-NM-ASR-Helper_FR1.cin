@@ -1,0 +1,464 @@
+variables
+{
+  /* NM-IL Include for FlexRay SPA model with AUTOSAR NM
+   *
+   * This include file establishes the coupling between NM <-> IL and
+   * activates/deactivates the FlexRay interface according to the NM states of the simulated nodes.
+   *
+   * The simulation node needs to load the components AutosarFlexRayNM32.dll.
+   *
+   * Call NMFR1_OnInit() in "on preStart()" of the main program!
+   * Call NMFR1_OnStart() in "on start()" of the main program!
+   *
+   * Version 6.5, (c) 2016 Vector Informatik GmbH, Department for Networks and Distributed Systems
+   */
+
+  long  gNMFR1_KeySlotID1              = 7;
+  long  gNMFR1_KeySlotID2              = 60;
+
+  const dword cNMFR1_NMIndDebug      = 0x0001;
+  const dword cNMFR1_NMInitDebug     = 0x0002;
+  const dword cNMFR1_ILControlDebug  = 0x0010;
+  
+  const double cNMFR1_NS2S = 1000000000.0;
+
+  // Internally used variables and timers:
+  dword   gNMFR1_BusContext = 0;
+  msTimer gNMFR1_TRequestBusWithDelay;
+  long    gNMFR1_CurrentNMState = cFR1_ASR_NM_STATE_UNDEFINED;
+  long    gNMFR1_CurrentNMInternalRequest = 0;
+  
+  msTimer gNMFR1_TSleepTimer;
+  long    gNMFR1_SleepTimerTimeout = 4000; // [ms]
+  int     gNMFR1_ApplicationActivity = 0;
+}
+
+/*****************************************************************************
+ * Include Initialization
+ *****************************************************************************/
+
+void NMFR1_OnInit ()
+{
+  // This function must be called from the main program in "on preStart()"!
+
+  //FrNmSetVerbosity(3);
+  
+  NMPFR1_InitSysVars();
+  
+  gNMFR1_BusContext = GetBusNameContext(gFR1BusName);
+
+  if (strncmp("%NODE_NAME%", "_Gateway", 50) == 0)
+  {
+    gNMPFR1_DebugFlags |= cNMFR1_NMIndDebug;
+    gNMPFR1_DebugFlags |= cNMFR1_NMInitDebug;
+    gNMPFR1_DebugFlags |= cNMPFR1_NMControlDebug;
+    gNMPFR1_DebugFlags |= cNMFR1_ILControlDebug;
+    gNMPFR1_DebugFlags |= cNMPFR1_BusControlDebug;
+    gNMPFR1_DebugFlags |= cNMPFR1_ShowPOCDebug;
+    gNMPFR1_DebugFlags |= cNMPFR1_ShowSymbolDebug;
+  }
+
+  FrSetKeySlot(gNMPFR1_Channel, 3, 1, gNMFR1_KeySlotID1, 1);
+  FrSetKeySlot(gNMPFR1_Channel, 3, 2, gNMFR1_KeySlotID2, 1);
+}
+
+void NMFR1_OnStart ()
+{
+  // This function must be called from the main program in "on start()"!
+  
+  if (gNMPFR1_DebugFlags & cNMFR1_NMInitDebug)
+  {
+    write("+++++++++ %NODE_NAME%: FlexRay NM on start()");
+  }
+
+  _NMPFR1_DisableAllControls();
+
+  if (@sysvar::IL::Power == 0)
+  {
+    _NMPFR1_CheckAllNMStates();
+  }
+  else
+  {
+    NMFR1_PowerOnStart();
+  }
+
+  if (@sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus != 0)
+  {
+    //write("+++++++++ %NODE_NAME%: on start(): Bus to be requested!");
+    gNMFR1_TRequestBusWithDelay.set(3); // To reach the HALT POC state after measurement start can take approx. 2.5 ms; the delay should be greater!
+  }
+
+  gNMPFR1_TEnableControls.set(2);
+}
+
+/*****************************************************************************
+ * NM Control
+ * These functions can be called from the main program or react on
+ * panel controls in order to manipulate the NM status of the controlled node.
+ *****************************************************************************/
+
+void NMFR1_Enable (int enable)
+{
+  /* void NMFR1_Enable (int enable);
+   *
+   *  Function enables/disables the Network Management DLL.
+   */
+  int wasEnabled = -1;
+
+  //if (enable == wasEnabled) return;
+
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%] NMFR1_Enable(%d) called ...", TimeNowNS()/cNMFR1_NS2S, enable);
+  }
+
+  SetBusContext(gNMFR1_BusContext);
+  if (enable == 1)
+  {
+#if ((TOOL_MAJOR_VERSION > 8) || (TOOL_MAJOR_VERSION == 8 && TOOL_MINOR_VERSION > 2) || (TOOL_MAJOR_VERSION == 8 && TOOL_MINOR_VERSION == 2 && TOOL_SERVICE_PACK > 2))
+    // This function requires at least CANoe 8.2 SP3:
+    FrNm_CtrlSimulationOn();
+#endif
+  }
+  else
+  {
+#if ((TOOL_MAJOR_VERSION > 8) || (TOOL_MAJOR_VERSION == 8 && TOOL_MINOR_VERSION > 2) || (TOOL_MAJOR_VERSION == 8 && TOOL_MINOR_VERSION == 2 && TOOL_SERVICE_PACK > 2))
+    // This function requires at least CANoe 8.2 SP3:
+    FrNm_CtrlSimulationOff();
+#endif
+  }
+
+  wasEnabled = enable;
+}
+
+void NMFR1_SetApplActivity (int activity)
+{
+  /* void NMFR1_SetApplActivity (int activity);
+   *
+   *  Function sets the application activity at the Interaction Layer.
+   */
+  int wasActivity = -1;
+
+  //if (activity == wasActivity) return;
+
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%] NMFR1_SetApplActivity(%d) called ...", TimeNowNS()/cNMFR1_NS2S, activity);
+  }
+
+  SetBusContext(gNMFR1_BusContext);
+  if (activity > 0)
+  {
+//#if ((TOOL_MAJOR_VERSION > 9) || (TOOL_MAJOR_VERSION == 9 && TOOL_MINOR_VERSION > 0) || (TOOL_MAJOR_VERSION == 9 && TOOL_MINOR_VERSION == 0 && TOOL_SERVICE_PACK > 3))
+//    // This function requires at least CANoe 9.0 SP4 (8.5 MR):
+//    FrNm_SetApplicationActivity(1);
+//#endif
+  }
+  else
+  {
+//#if ((TOOL_MAJOR_VERSION > 9) || (TOOL_MAJOR_VERSION == 9 && TOOL_MINOR_VERSION > 0) || (TOOL_MAJOR_VERSION == 9 && TOOL_MINOR_VERSION == 0 && TOOL_SERVICE_PACK > 3))
+//    // This function requires at least CANoe 9.0 SP4 (8.5 MR):
+//    FrNm_SetApplicationActivity(0);
+//#else
+    if (isTimerActive(gNMFR1_TSleepTimer) == 0)
+    {
+      if ((@sysvar::IL::Ignition == 0) && (gNMFR1_SleepTimerTimeout > 0))
+      {
+        @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 0;
+      }
+    }
+//#endif
+  }
+  gNMFR1_ApplicationActivity = activity;
+
+  wasActivity = activity;
+}
+
+NMFR1_ReleaseBus()
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_NetworkRelease()", TimeNowNS()/cNMFR1_NS2S);
+  }
+  SetBusContext(gNMFR1_BusContext);
+  FrNm_NetworkRelease();
+}
+
+NMFR1_RequestBus ()
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_NetworkRequest()", TimeNowNS()/cNMFR1_NS2S);
+  }
+  SetBusContext(gNMFR1_BusContext);
+  FrNm_NetworkRequest();
+}
+
+NMFR1_PassiveBusStart ()
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_PassiveStartUp()", TimeNowNS()/cNMFR1_NS2S);
+  }
+  SetBusContext(gNMFR1_BusContext);
+  FrNm_PassiveStartUp();
+}
+
+NMFR1_PowerOnStart()
+{
+  @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 1;
+  //NMFR1_PassiveBusStart();
+}
+
+on sysvar_update sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus
+{
+  if( @this == 1 )
+  {
+    NMFR1_RequestBus();
+  }
+  else
+  {
+    NMFR1_ReleaseBus();
+  }
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::BusReleaseAll
+{
+  if( @this == 1 )
+  {
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 0;
+    //@this = 0;
+  }
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::BusRequestAll
+{
+  if( @this == 1 )
+  {
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 1;
+    //@this = 0;
+  }
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::BusPassiveStartAll
+{
+  if( @this == 1 )
+  {
+    NMFR1_PassiveBusStart();
+    //@this = 0;
+  }
+}
+
+on sysvar sysvar::NM_FR1::StateControl::NmPduTxEnable
+{
+  SetBusContext(gNMFR1_BusContext);
+  if(@this == 1)
+    FrNm_DisablePassiveMode(); // NM PDU is transmitted after wake up, and in normal operation and repeat message state
+  else 
+    FrNm_EnablePassiveMode(); // NM PDU is never transmitted
+}
+
+void NMFR1_CancelOrReStartSleepTimer(int kl15)
+{
+  gNMFR1_TSleepTimer.cancel();
+  if ((kl15 == 0) && (gNMFR1_SleepTimerTimeout > 0))
+  {
+    gNMFR1_TSleepTimer.set(gNMFR1_SleepTimerTimeout);
+  }
+}
+
+on timer gNMFR1_TSleepTimer
+{
+  if (gNMFR1_ApplicationActivity == 0)
+  {
+//#if ((TOOL_MAJOR_VERSION > 9) || (TOOL_MAJOR_VERSION == 9 && TOOL_MINOR_VERSION > 0) || (TOOL_MAJOR_VERSION == 9 && TOOL_MINOR_VERSION == 0 && TOOL_SERVICE_PACK > 3))
+//    // This functionality is not required since handled from NM DLL since CANoe 9.0 SP4 (8.5 MR).
+//#else
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 0;
+//#endif
+  }
+}
+
+/*****************************************************************************
+ * NM Indications
+ * They are called from the NM simulation in order to control the IL.
+ *****************************************************************************/
+
+void NMFR1_IndSynchronizeMode()
+{
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_SynchronizeModeInd()", TimeNowNS()/cNMFR1_NS2S);
+  }
+}
+
+void NMFR1_IndNetworkStart()
+{
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_NetworkStartInd()", TimeNowNS()/cNMFR1_NS2S);
+  }
+  NMFR1_PassiveBusStart();
+}
+
+void NMFR1_IndNetworkMode()
+{
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_NetworkModeInd()", TimeNowNS()/cNMFR1_NS2S);
+  }
+  NMFR1_StartIL();
+  NMFR1_CancelOrReStartSleepTimer(@sysvar::IL::Ignition);
+}
+
+void NMFR1_IndNetworkTimeout()
+{
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_NetworkTimeoutInd()", TimeNowNS()/cNMFR1_NS2S);
+  }
+}
+
+void NMFR1_IndPrepareBusSleepMode()
+{
+  // This indication does not exist for FlexRay! Code is obsolete.
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_PrepareBusSleepModeInd()", TimeNowNS()/cNMFR1_NS2S);
+  }
+}
+
+void NMFR1_IndBusSleepMode()
+{
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: FrNm_BusSleepModeInd()", TimeNowNS()/cNMFR1_NS2S);
+  }
+  NMFR1_StopIL();
+}
+
+void NMFR1_IndStateChangeNotification( long previousState, long currentState) 
+{
+  long mode;
+  if ((previousState == cFR1_ASR_NM_STATE_UNDEFINED || previousState == cFR1_ASR_NM_STATE_BUS_SLEEP) && (currentState != cFR1_ASR_NM_STATE_BUS_SLEEP))
+  { 
+    @sysvar::NM_FR1::StateControl::ActiveNodes += 1;
+  }
+  if ((previousState != cFR1_ASR_NM_STATE_UNDEFINED) && (currentState == cFR1_ASR_NM_STATE_BUS_SLEEP))
+  { 
+    @sysvar::NM_FR1::StateControl::ActiveNodes -= 1;
+  }
+
+  sysSetVariableInt(gNMPFR1_SysVarNamespace, gNMPFR1_SysVarNMState, currentState);
+  gNMFR1_CurrentNMState = currentState;
+
+  if ((currentState <= cFR1_ASR_NM_STATE_BUS_SLEEP) || (currentState > cFR1_ASR_NM_STATE_SYNCHRONIZE))
+  {
+    mode = cFR1_NM_NODE_MODE_Sleep_Mode;
+  }
+  else
+  {
+    if (currentState == cFR1_ASR_NM_STATE_SYNCHRONIZE)
+    {
+      mode = cFR1_NM_NODE_MODE_Synchronize_Mode;
+    }
+    else
+    {
+      mode = cFR1_NM_NODE_MODE_Network_Mode;
+    }
+  }
+
+  if (gNMPFR1_DebugFlags & cNMFR1_NMIndDebug)
+  {
+    write("[%.6f %NODE_NAME%]: NM currentState = %d, mode = %d", TimeNowNS()/cNMFR1_NS2S, currentState, mode);
+  }
+
+  @sysvar::NM_FR1::NODES::N_%NODE_NAME%::Mode = mode;
+
+  _NMPFR1_CheckAllNMStates();
+}
+
+/*****************************************************************************
+ * IL Control
+ * These functions control the sending behavior of the node and are called
+ * from the NM indications or from the control panel.
+ *****************************************************************************/
+
+NMFR1_StopIL()
+{
+  @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestIL = 0;
+}
+
+NMFR1_StartIL ()
+{
+  @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestIL = 1;
+}
+
+on sysvar_update sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestIL
+{
+  ILFR1_WaitResume(@this); // defined in the IL-Helper include file
+}
+
+on sysvar_update sysvar::NM_FR1::NODES::N_%NODE_NAME%::ApplActivity
+{
+  NMFR1_SetApplActivity(@this);
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::ILReleaseAll
+{
+  if( @this == 1 )
+  {
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestIL = 0;
+    //@this = 0;
+  }
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::ILRequestAll
+{
+  if( @this == 1 )
+  {
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestIL = 1;
+    //@this = 0;
+  }
+}
+
+NMFR1_StartStopIL(int enable)
+{
+  if (gNMPFR1_IsInitialized <= 0)
+    return;
+    
+  ILFR1_StartStop(enable); // defined in the IL-Helper include file
+}
+
+
+on sysvar_update sysvar::NM_FR1::StateControl::CheckILControl
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%]: CheckILControl: sets bus request/release according to KL15=%d.", TimeNowNS()/cNMFR1_NS2S, @sysvar::IL::Ignition);
+  }
+  ILFR1_WaitResume(@sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestIL); // defined in IL helper include file
+}
+
+on sysvar_update sysvar::NM_FR1::StateControl::ActiveNodes
+{
+  if (gNMPFR1_DebugFlags & cNMPFR1_NMControlDebug)
+  {
+    write("[%.6f %NODE_NAME%]: ActiveNodes=%d.", TimeNowNS()/cNMFR1_NS2S, @this);
+  }
+}
+
+/*****************************************************************************
+ * Bus Control
+ * These functions control the bus shutdown and startup and is called
+ * from within the NM simulation.
+ *****************************************************************************/
+
+on timer gNMFR1_TRequestBusWithDelay
+{
+  NMFR1_RequestBus();
+}
+
+/*****************************************************************************
+ * EOF
+ *****************************************************************************/

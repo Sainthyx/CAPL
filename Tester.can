@@ -1,0 +1,1015 @@
+/*@!Encoding:936*/
+includes
+{
+  
+}
+
+variables
+{
+  long PASsts_flag,gearN,Vehmove,SteerAgLe,SteerAgRi,SteerStraight,Transmission_Ratio=17;
+  double PrkgAssiAReq,v,s,W,tan,SteerAg;
+  msTimer ms_PASmonitor,mt_RCacc_FL,mt_RCacc_FR,mt_RCacc_RL,mt_RCacc_RR,mt_ECUreaction,
+  mt_ECUreaction1,mt_ECUreaction2,mt_vehmove,mt_gearN;
+}
+
+on start
+{
+  $EpbStsEpbSts =9;
+}
+
+on message CAN_Safety::PASSafetyCANFD4Fr02//判断控制器是否发出报文
+{
+  if(this.dir ==rx)
+  {
+    @test::PAS_status =1;
+    setTimer(ms_PASmonitor,1000);
+    if(PASsts_flag ==0)
+    {
+      PASsts_flag =1;
+      writeDbgLevel(1,"PAS node online!!!");
+    }
+  }
+}
+on timer ms_PASmonitor
+{
+  @test::PAS_status =0;
+  PASsts_flag =0;
+  writeDbgLevel(1,"PAS node offline!!!");
+}
+
+on signal VehModMngtGlbSafe1UsgModSts//发动机点火状态关联
+{
+  if(@test::Engine_type ==0)//内燃机
+  {
+    if(this ==11 || this ==13)
+      $EngSt1WdSts1 =5;
+  }
+  else if(@test::Engine_type ==1)//电动机
+  {
+    if(this ==11 || this ==13)
+      $EngSt1WdSts1 =6;
+  }
+}
+
+on sysvar (test::VehSpdLgtA | test::RCRL_ChangeSpeed | test::RCRR_ChangeSpeed)//车速单位转换及控制轮速脉冲
+{
+  $VehSpdLgtA = @sysvar::test::VehSpdLgtA / 3.6;
+  $WhlSpdCircumlFrntLe = $VehSpdLgtA;
+  $WhlSpdCircumlFrntWhlSpdCircumlFrntRi = $VehSpdLgtA;
+  $WhlSpdCircumlReLe = $VehSpdLgtA;
+  $WhlSpdCircumlReRi = $VehSpdLgtA;
+  if($EpbStsEpbSts ==9 && $BrkPedlPsdBrkPedlPsd ==0 && ($GearLvrIndcn == 1 || $GearLvrIndcn == 3 || $GearLvrIndcn == 4))
+  {
+    if(@test::VehSpdLgtA >0)
+    {
+      if(@sysvar::test::RCRL_ChangeSpeed >0 && @sysvar::test::RCRR_ChangeSpeed >0)//判断轮数脉冲增加周期正常
+      {
+        @test::RC_intlRL = (1000 / ((@sysvar::test::VehSpdLgtA)/(1.95936/48))) + @sysvar::test::RCRL_ChangeSpeed;//48齿轮，17寸轮胎轮速脉冲时间间隔计算
+        @test::RC_intlRR = (1000 / ((@sysvar::test::VehSpdLgtA)/(1.95936/48))) + @sysvar::test::RCRR_ChangeSpeed;
+        @test::RC_intlFL = (1000 / ((@sysvar::test::VehSpdLgtA)/(1.95936/48))) + @sysvar::test::RCRL_ChangeSpeed;
+        @test::RC_intlFR = (1000 / ((@sysvar::test::VehSpdLgtA)/(1.95936/48))) + @sysvar::test::RCRR_ChangeSpeed;
+        @test::RCAcc_OnOff = 1;
+        write("RCAcc_On");
+      }
+      else//判断轮数脉冲增加周期异常
+      {
+        writeDbgLevel(1,"RC_intl Error!!!Waiting...");
+      }
+    }
+    else if(@test::VehSpdLgtA ==0)
+    {
+      @test::RCAcc_OnOff = 0;
+      write("RCAcc_Off");
+    }
+  }
+}
+
+on sysvar_update sysvar::operation::PinionSteerAg//方向盘转角和轮速脉冲变化关系处理
+{
+  SteerAg = @sysvar::operation::PinionSteerAg * Transmission_Ratio;
+  if(SteerAg <= Transmission_Ratio *-1)//1.右转
+  {
+    @sysvar::test::RCRL_ChangeSpeed=((SteerAg/@sysvar::test::RC_factor1*@sysvar::test::RC_factor2)/2)+@sysvar::test::RC_factor3;
+    @sysvar::test::RCRR_ChangeSpeed=(-(SteerAg/@sysvar::test::RC_factor4*@sysvar::test::RC_factor5)/2)+@sysvar::test::RC_factor6;
+    if(SteerAgRi ==0)
+    {
+      SteerAgRi =1;
+      SteerStraight =0;
+      writeDbgLevel(1,"Change RC of turn right!");
+    }
+  }
+  else if(SteerAg >= Transmission_Ratio)//左转
+  {
+    @sysvar::test::RCRL_ChangeSpeed=((SteerAg/@sysvar::test::RC_factor7*@sysvar::test::RC_factor8)/2)+@sysvar::test::RC_factor9;
+    @sysvar::test::RCRR_ChangeSpeed=(-(SteerAg/@sysvar::test::RC_factor10*@sysvar::test::RC_factor11)/2)+@sysvar::test::RC_factor12;
+    if(SteerAgLe ==0)
+    {
+      SteerAgLe =1;
+      SteerStraight =0;
+      writeDbgLevel(1,"Change RC of turn left!");
+    }
+  }
+  else
+  {
+    SteerAgLe =0;
+    SteerAgRi =0;
+    @sysvar::test::RCRL_ChangeSpeed = @sysvar::test::RC_factor0;
+    @sysvar::test::RCRR_ChangeSpeed = @sysvar::test::RC_factor0;
+    if(SteerStraight ==0)
+    {
+      SteerStraight =1;
+      writeDbgLevel(1,"Change RC of go straight!");
+    }
+  }
+}
+
+on signal (VehSpdLgtA | GearLvrIndcn | PinionSteerAgGroupPinionSteerAg1)//偏航角计算和车辆运动方向关联
+{
+  v = @sysvar::test::VehSpdLgtA;
+  s = ABS((@sysvar::operation::PinionSteerAg)*(PI/180));
+  tan = (sin(s))/(cos(s));
+  W = ((float)((int)((((v*tan)/2.7)*(180/PI))*100)))/100;
+  if(($GearLvrIndcn == 3 && @operation::PinionSteerAg >0) || ($GearLvrIndcn == 1 && @operation::PinionSteerAg <0))
+  {
+    $AgDataRawSafeYawRate = (((float)((int)(W*100)))/100)*4096;
+  }
+  if(($GearLvrIndcn == 1 && @operation::PinionSteerAg >0) || ($GearLvrIndcn == 3 && @operation::PinionSteerAg <0))
+  {
+    $AgDataRawSafeYawRate = -(((float)((int)(W*100)))/100)*4096;
+  }
+  writeDbgLevel(11,"Vehspd: %f,VehWheelAg: %f,VehYawRate: %f,WheelAg: %f",v,s,W,@operation::PinionSteerAg);
+  if($GearLvrIndcn ==1 && @sysvar::test::VehSpdLgtA >0)
+  {
+    $WhlDirRotlFrntLe = 3;
+    $WhlDirRotlFrntRi = 3;
+    $WhlDirRotlReLe = 3;
+    $WhlDirRotlReRi = 3;
+    $VehMtnStVehMtnSt = 6;
+  }
+  if($GearLvrIndcn ==3 && @sysvar::test::VehSpdLgtA >0)
+  {
+    $WhlDirRotlFrntLe = 2;
+    $WhlDirRotlFrntRi = 2;
+    $WhlDirRotlReLe = 2;
+    $WhlDirRotlReRi = 2;
+    $VehMtnStVehMtnSt = 4;
+  }
+  if(@sysvar::test::VehSpdLgtA ==0)
+  {
+    $WhlDirRotlFrntLe = 1;
+    $WhlDirRotlFrntRi = 1;
+    $WhlDirRotlReLe = 1;
+    $WhlDirRotlReRi = 1;
+    $VehMtnStVehMtnSt = 1;
+  }
+}
+
+on signal BrkPedlPsdBrkPedlPsd//刹车踏板与刹车灯、车速关联
+{
+  if(this ==0)
+    $ExtrLtgStsStopLi =0;
+  if(this ==1)
+  {
+    $ExtrLtgStsStopLi =1;
+    if(@sysvar::test::VehSpdLgtA !=0)
+      @sysvar::test::VehSpdLgtA =0;
+  }
+}
+
+on signal EpbStsEpbSts//手刹与车速关联
+{
+  if(this ==3)
+  {
+    if(@sysvar::test::VehSpdLgtA !=0)
+      @sysvar::test::VehSpdLgtA =0;
+  }
+}
+
+on sysvar sysvar::test::RCAcc_OnOff
+{
+  if(@this ==0)
+  {
+    cancelTimer(mt_RCacc_FL);cancelTimer(mt_RCacc_FR);cancelTimer(mt_RCacc_RL);cancelTimer(mt_RCacc_RR);
+    write("RCAcc_Stop");
+  }
+  else if(@this ==1)
+  {
+    settimer(mt_RCacc_FL,0);settimer(mt_RCacc_FR,0);settimer(mt_RCacc_RL,0);settimer(mt_RCacc_RR,0);
+    write("RCAcc_Start");
+  }
+}
+on timer mt_RCacc_FL
+{
+  $WhlRotToothCntrFrntLe ++;
+  settimer(mt_RCacc_FL,@sysvar::test::RC_intlFL);
+  write("RCAcc_FL");
+}
+on timer mt_RCacc_FR
+{
+  $WhlRotToothCntrFrntRi ++;
+  settimer(mt_RCacc_FR,@sysvar::test::RC_intlFR);
+  write("RCAcc_FR");
+}
+on timer mt_RCacc_RL
+{
+  $WhlRotToothCntrReLe ++;
+  settimer(mt_RCacc_RL,@test::RC_intlRL);
+  write("RCAcc_RL");
+}
+on timer mt_RCacc_RR
+{
+  $WhlRotToothCntrReRi ++;
+  settimer(mt_RCacc_RR,@test::RC_intlRR);
+  write("RCAcc_RR");
+}
+
+on signal GearLvrIndcn//档位限制
+{
+  switch(this)
+  {
+    case(0)://挂P档无车速
+      if(@sysvar::test::VehSpdLgtA >0)
+      {
+        @sysvar::test::VehSpdLgtA =0;
+        @test::RCAcc_OnOff =0;
+      }
+      else if(@sysvar::test::VehSpdLgtA ==0)
+      writeDbgLevel(1,"Please engage a gear D or R before improve the speed!!!");
+      break;
+    case(1)://挂R档进入AVM后视图
+      {
+        setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",1);
+        setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+        setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+        setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+        setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+        setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+        setControlVisibility("Park_Assi","2d_None",1);setControlVisibility("Park_Assi","3d_None",0);
+        writeDbgLevel(1,"Enter AVM by gear R!!!");
+      }
+      break;
+    case(2)://挂N档车辆滑行
+      if(@sysvar::test::VehSpdLgtA >0)
+        setTimer(mt_gearN,0);
+      else if(@sysvar::test::VehSpdLgtA ==0)
+        writeDbgLevel(1,"Please engage a gear D or R before improve the speed!!!");
+      break;
+  }
+}
+on timer mt_gearN
+{
+  gearN =1;
+  if(@sysvar::test::VehSpdLgtA >1)
+  {
+    @sysvar::test::VehSpdLgtA -=1;
+    setTimer(mt_gearN,50);
+    write("Slow down by gear N!!!");
+  }
+  else if(@sysvar::test::VehSpdLgtA<=1 || @sysvar::test::VehSpdLgtA>125)
+  {
+    gearN =0;
+    @sysvar::test::VehSpdLgtA =0;
+    @test::RCAcc_OnOff =0;
+    write("Please check the Gear N!!!");
+  }
+}
+/***********************************泊车控制***********************************/
+on signal isPrkgAssiElectcStabyProgCtrlModReqGroupPASElectcStabyProgCtrlModReq//与关联件建立握手
+{
+  if(this ==0)
+  {
+    writeDbgLevel(1,"Handshake over! ");
+    $AsyLatCtrlModReqGroupAsyLatCtrlModReq =0;
+    $AsyLatCtrlModReqGroupCfmdLatCtrlMod =0;
+    $AsyALgtCtrlModCfmdAsyALgtCtrlMod1 =0;
+  }
+  if(this ==1)
+  {
+    writeDbgLevel(1,"APP handshake reaction! ");
+    setTimer(mt_ECUreaction,@sysvar::test::ECUreaction_interval);
+  }
+  if(this ==2)
+  {
+    writeDbgLevel(1,"RPA handshake reaction! ");
+    setTimer(mt_ECUreaction1,@sysvar::test::ECUreaction_interval);
+  }
+  if(this ==3)
+  {
+    writeDbgLevel(1,"HPP handshake reaction! ");
+    setTimer(mt_ECUreaction2,@sysvar::test::ECUreaction_interval);
+  }
+}
+on timer mt_ECUreaction
+{
+  writeDbgLevel(1,"APA Handshake start! ");
+  $AsyLatCtrlModReqGroupAsyLatCtrlModReq =13;
+  $AsyLatCtrlModReqGroupCfmdLatCtrlMod =13;
+  $AsyALgtCtrlModCfmdAsyALgtCtrlMod1 =11;
+}
+on timer mt_ECUreaction1
+{
+  writeDbgLevel(1,"RPA Handshake start! ");
+  $AsyLatCtrlModReqGroupAsyLatCtrlModReq =14;
+  $AsyLatCtrlModReqGroupCfmdLatCtrlMod =14;
+  $AsyALgtCtrlModCfmdAsyALgtCtrlMod1 =12;
+}
+on timer mt_ECUreaction2
+{
+  writeDbgLevel(1,"HPP Handshake start! ");
+  $AsyLatCtrlModReqGroupAsyLatCtrlModReq =15;
+  $AsyLatCtrlModReqGroupCfmdLatCtrlMod =15;
+  $AsyALgtCtrlModCfmdAsyALgtCtrlMod1 =13;
+}
+on signal (isDrvrAsscSysSts | BrkPedlPsdBrkPedlPsd)//响应加速度请求
+{
+  if($isDrvrAsscSysSts ==1)
+  {
+    writeDbgLevel(1,"Handshake over! ");
+    $isAsyLatCtrlModReqGroupAsyLatCtrlModReq =0;
+    $isAsyLatCtrlModReqGroupCfmdLatCtrlMod =0;
+    $isAsyALgtCtrlModCfmdAsyALgtCtrlMod1 =0;
+    $StandStillMgrStsForHld1 =0;
+  }
+  if($isDrvrAsscSysSts ==3)//刹车建压保持车辆静止
+  {
+    $StandStillMgrStsForHld1 =3;
+  }
+  if($isDrvrAsscSysSts ==4 || $isDrvrAsscSysSts ==7)
+  {
+    if($BrkPedlPsdBrkPedlPsd ==0)
+      settimer(mt_vehmove,1000);
+    else if($BrkPedlPsdBrkPedlPsd ==1)
+      cancelTimer(mt_vehmove);
+  }
+  else
+  {
+    Vehmove =0;
+  }
+}
+on timer mt_vehmove
+{
+  if(Vehmove ==0)
+  {
+    Vehmove =1;
+    writeDbgLevel(1,"Vehmove");
+  }
+  PrkgAssiAReq = ($isPrkgSpdCtrlSafeGroupPrkgAssiAReq1*0.01) -1.28;
+  writeDbgLevel(11,"PrkgAssiAReq: %f",PrkgAssiAReq);
+  if(@sysvar::test::VehSpdLgtA + PrkgAssiAReq >0)
+  {
+    @sysvar::test::VehSpdLgtA += PrkgAssiAReq;
+  }
+  else if(@sysvar::test::VehSpdLgtA + PrkgAssiAReq <0)
+  {
+    @sysvar::test::VehSpdLgtA =0;
+  }
+  settimer(mt_vehmove,200);
+}
+on signal_update (isDrvrAsscSysSts | isPrkgPinionAgReqGroupParkAssiPinionAgReq)//响应方向盘请求
+{
+  if($isDrvrAsscSysSts ==4 || $isDrvrAsscSysSts ==7 || $isDrvrAsscSysSts ==9)
+  {
+    @sysvar::operation::PinionSteerAg=($isPrkgPinionAgReqGroupParkAssiPinionAgReq/1024) - 14.5;
+  }
+}
+on signal (isDrvrAsscSysSts | isGearPrkgAssiReqGroupGearPrkgAssiReq1)//响应档位请求
+{
+  if($isDrvrAsscSysSts ==4 || $isDrvrAsscSysSts ==5 || $isDrvrAsscSysSts ==7 || $isDrvrAsscSysSts ==9)
+  {
+    switch($isGearPrkgAssiReqGroupGearPrkgAssiReq1)
+    {
+      case(1):
+        $GearLvrIndcn = 0;
+        writeDbgLevel(1,"Reaction gear P!");
+        break;
+      case(2):
+        $GearLvrIndcn = 1;
+        writeDbgLevel(1,"Reaction gear R!");
+        break;
+      case(3):
+        $GearLvrIndcn = 3;
+        writeDbgLevel(1,"Reaction gear D!");
+        break;
+    }
+  }
+}
+on signal (isDrvrAsscSysSts | isPrkgBrkElectcCtrlReqReq)//响应EPB请求
+{
+  if($isDrvrAsscSysSts ==4 || $isDrvrAsscSysSts ==5  || $isDrvrAsscSysSts ==7 || $isDrvrAsscSysSts ==9)
+  {
+    if($isPrkgBrkElectcCtrlReqReq==1)
+    {
+      $EpbStsEpbSts=9;
+    }
+    else if($isPrkgBrkElectcCtrlReqReq==2)
+    {
+      $EpbStsEpbSts=3;
+    }
+  }
+}
+
+/***********************************视图控制***********************************/
+on signal isSwtDispOnAndOffStsResp
+{
+  if(this ==8)
+  {
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+  }
+}
+on signal isVisnImgDispModResp
+{
+  switch(this)
+  {
+    case(0):
+    setControlVisibility("Park_Assi","2d_None",0);setControlVisibility("Park_Assi","3d_None",0);
+    case(1):
+    setControlVisibility("Park_Assi","2d_fr_Disp",1);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(2):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",1);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(3):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",1);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(4):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",1);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(5):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",1);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",0);
+      break;
+    case(6):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",1);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",0);
+      break;
+    case(7):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",1);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",0);
+      break;
+    case(8):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",1);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",0);
+      break;
+    case(13):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",1);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(14):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",1);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(15):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",1);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(16):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",1);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(17):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",1);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(18):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",1);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(19):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",1);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(20):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",1);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",0);setControlVisibility("Park_Assi","more_None",1);
+      break;
+    case(21):
+    setControlVisibility("Park_Assi","2d_fr_Disp",0);setControlVisibility("Park_Assi","2d_re_Disp",0);
+    setControlVisibility("Park_Assi","2d_le_Disp",0);setControlVisibility("Park_Assi","2d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_fr_Disp",0);setControlVisibility("Park_Assi","3d_re_Disp",0);
+    setControlVisibility("Park_Assi","3d_le_Disp",0);setControlVisibility("Park_Assi","3d_ri_Disp",0);
+    setControlVisibility("Park_Assi","3d_f&l_Disp",0);setControlVisibility("Park_Assi","3d_f&r_Disp",0);
+    setControlVisibility("Park_Assi","3d_r&l_Disp",0);setControlVisibility("Park_Assi","3d_r&r_Disp",0);
+    setControlVisibility("Park_Assi","FTC",0);setControlVisibility("Park_Assi","RTC",0);
+    setControlVisibility("Park_Assi","FthC",0);setControlVisibility("Park_Assi","RthC",0);
+    setControlVisibility("Park_Assi","3DTouring",1);setControlVisibility("Park_Assi","more_None",0);
+    setControlVisibility("Park_Assi","2d_None",0);setControlVisibility("Park_Assi","3d_None",0);
+    setControlVisibility("Park_Assi","2D_on",0);setControlVisibility("Park_Assi","2D_off",1);
+    setControlVisibility("Park_Assi","3D_on",1);setControlVisibility("Park_Assi","3D_off",0);
+      break;
+    default:
+      write("DispMod value is out of range!!!");
+      break;
+  }
+}
+on signal isVisnAgExtnResp
+{
+  if(this ==0 && $isVisnImgDispModResp !=21)
+  {
+    setControlVisibility("Park_Assi","2D_on",1);setControlVisibility("Park_Assi","2D_off",0);
+    setControlVisibility("Park_Assi","3D_on",0);setControlVisibility("Park_Assi","3D_off",1);
+    setControlVisibility("Park_Assi","2d_None",1);setControlVisibility("Park_Assi","3d_None",0);
+  }
+  else if(this ==1 && $isVisnImgDispModResp !=21)
+  {
+    setControlVisibility("Park_Assi","2D_on",0);setControlVisibility("Park_Assi","2D_off",1);
+    setControlVisibility("Park_Assi","3D_on",1);setControlVisibility("Park_Assi","3D_off",0);
+    setControlVisibility("Park_Assi","2d_None",1);setControlVisibility("Park_Assi","3d_None",1);
+  }
+}
+
+on sysvar (test::FL | sysvar::test::FML | sysvar::test::FMR | sysvar::test::FR)
+{
+  if(@test::FL >0 && @test::FL <=30)
+  {
+    setControlVisibility("Park_Assi","FL1",1);
+    setControlVisibility("Park_Assi","FL2",0);
+  }
+  else if(@test::FL >30 && @test::FL <=70)
+  {
+    setControlVisibility("Park_Assi","FL1",0);
+    setControlVisibility("Park_Assi","FL2",1);
+  }
+  else if(@test::FL >70)
+  {
+    setControlVisibility("Park_Assi","FL1",0);
+    setControlVisibility("Park_Assi","FL2",0);
+  }
+  if(@test::FR >0 && @test::FR <=30)
+  {
+    setControlVisibility("Park_Assi","FR1",1);
+    setControlVisibility("Park_Assi","FR2",0);
+  }
+  else if(@test::FR >30 && @test::FR <=70)
+  {
+    setControlVisibility("Park_Assi","FR1",0);
+    setControlVisibility("Park_Assi","FR2",1);
+  }
+  else if(@test::FR >70)
+  {
+    setControlVisibility("Park_Assi","FR1",0);
+    setControlVisibility("Park_Assi","FR2",0);
+  }
+  if(@test::FML >0 && @test::FML <=30)
+  {
+    setControlVisibility("Park_Assi","FML1",1);
+    setControlVisibility("Park_Assi","FML2",0);
+    setControlVisibility("Park_Assi","FML3",0);
+  }
+  else if(@test::FML >30 && @test::FML <=70)
+  {
+    setControlVisibility("Park_Assi","FML1",0);
+    setControlVisibility("Park_Assi","FML2",1);
+    setControlVisibility("Park_Assi","FML3",0);
+  }
+  else if(@test::FML >70 && @test::FML <=100)
+  {
+    setControlVisibility("Park_Assi","FML1",0);
+    setControlVisibility("Park_Assi","FML2",0);
+    setControlVisibility("Park_Assi","FML3",1);
+  }
+  else if(@test::FML >100)
+  {
+    setControlVisibility("Park_Assi","FML1",0);
+    setControlVisibility("Park_Assi","FML2",0);
+    setControlVisibility("Park_Assi","FML3",0);
+  }
+  if(@test::FMR >0 && @test::FMR <=30)
+  {
+    setControlVisibility("Park_Assi","FMR1",1);
+    setControlVisibility("Park_Assi","FMR2",0);
+    setControlVisibility("Park_Assi","FMR3",0);
+  }
+  else if(@test::FMR >30 && @test::FMR <=70)
+  {
+    setControlVisibility("Park_Assi","FMR1",0);
+    setControlVisibility("Park_Assi","FMR2",1);
+    setControlVisibility("Park_Assi","FMR3",0);
+  }
+  else if(@test::FMR >70 && @test::FMR <=100)
+  {
+    setControlVisibility("Park_Assi","FMR1",0);
+    setControlVisibility("Park_Assi","FMR2",0);
+    setControlVisibility("Park_Assi","FMR3",1);
+  }
+  else if(@test::FMR >100)
+  {
+    setControlVisibility("Park_Assi","FMR1",0);
+    setControlVisibility("Park_Assi","FMR2",0);
+    setControlVisibility("Park_Assi","FMR3",0);
+  }
+}
+on sysvar (test::RL | test::RML | test::RMR | test::RR)
+{
+  if(@test::RL >0 && @test::RL <=30)
+  {
+    setControlVisibility("Park_Assi","RL1",1);
+    setControlVisibility("Park_Assi","RL2",0);
+  }
+  else if(@test::RL >30 && @test::RL <=70)
+  {
+    setControlVisibility("Park_Assi","RL1",0);
+    setControlVisibility("Park_Assi","RL2",1);
+  }
+  else if(@test::RL >70)
+  {
+    setControlVisibility("Park_Assi","RL1",0);
+    setControlVisibility("Park_Assi","RL2",0);
+  }
+  if(@test::RR >0 && @test::RR <=30)
+  {
+    setControlVisibility("Park_Assi","RR1",1);
+    setControlVisibility("Park_Assi","RR2",0);
+  }
+  else if(@test::RR >30 && @test::RR <=70)
+  {
+    setControlVisibility("Park_Assi","RR1",0);
+    setControlVisibility("Park_Assi","RR2",1);
+  }
+  else if(@test::RR >70)
+  {
+    setControlVisibility("Park_Assi","RR1",0);
+    setControlVisibility("Park_Assi","RR2",0);
+  }
+  if(@test::RML >0 && @test::RML <=30)
+  {
+    setControlVisibility("Park_Assi","RML1",1);
+    setControlVisibility("Park_Assi","RML2",0);
+    setControlVisibility("Park_Assi","RML3",0);
+  }
+  else if(@test::RML >30 && @test::RML <=70)
+  {
+    setControlVisibility("Park_Assi","RML1",0);
+    setControlVisibility("Park_Assi","RML2",1);
+    setControlVisibility("Park_Assi","RML3",0);
+  }
+  else if(@test::RML >70 && @test::RML <=100)
+  {
+    setControlVisibility("Park_Assi","RML1",0);
+    setControlVisibility("Park_Assi","RML2",0);
+    setControlVisibility("Park_Assi","RML3",1);
+  }
+  else if(@test::RML >100)
+  {
+    setControlVisibility("Park_Assi","RML1",0);
+    setControlVisibility("Park_Assi","RML2",0);
+    setControlVisibility("Park_Assi","RML3",0);
+  }
+  if(@test::RMR >0 && @test::RMR <=30)
+  {
+    setControlVisibility("Park_Assi","RMR1",1);
+    setControlVisibility("Park_Assi","RMR2",0);
+    setControlVisibility("Park_Assi","RMR3",0);
+  }
+  else if(@test::RMR >30 && @test::RMR <=70)
+  {
+    setControlVisibility("Park_Assi","RMR1",0);
+    setControlVisibility("Park_Assi","RMR2",1);
+    setControlVisibility("Park_Assi","RMR3",0);
+  }
+  else if(@test::RMR >70 && @test::RMR <=100)
+  {
+    setControlVisibility("Park_Assi","RMR1",0);
+    setControlVisibility("Park_Assi","RMR2",0);
+    setControlVisibility("Park_Assi","RMR3",1);
+  }
+  else if(@test::RMR >100)
+  {
+    setControlVisibility("Park_Assi","RMR1",0);
+    setControlVisibility("Park_Assi","RMR2",0);
+    setControlVisibility("Park_Assi","RMR3",0);
+  }
+}
+on sysvar (test::FL_Long | sysvar::test::FR_Long | sysvar::test::RL_Long | sysvar::test::RR_Long)
+{
+  if(@test::FL_Long >0 && @test::FL_Long <=30)
+  {
+    setControlVisibility("Park_Assi","FLL1",1);
+  }
+  else if(@test::FL_Long >30)
+  {
+    setControlVisibility("Park_Assi","FLL1",0);
+  }
+  if(@test::RL_Long >0 && @test::RL_Long <=30)
+  {
+    setControlVisibility("Park_Assi","RLL1",1);
+  }
+  else if(@test::RL_Long >30)
+  {
+    setControlVisibility("Park_Assi","RLL1",0);
+  }
+  if(@test::FR_Long >0 && @test::FR_Long <=30)
+  {
+    setControlVisibility("Park_Assi","FRL1",1);
+  }
+  else if(@test::FR_Long >30)
+  {
+    setControlVisibility("Park_Assi","FRL1",0);
+  }
+  if(@test::RR_Long >0 && @test::RR_Long <=30)
+  {
+    setControlVisibility("Park_Assi","RRL1",1);
+  }
+  else if(@test::RR_Long >30)
+  {
+    setControlVisibility("Park_Assi","RRL1",0);
+  }
+}
+
+on signal PrkgDstCtrlSts
+{
+  if(this==1)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",1);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==2)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",1);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==3)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",1);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==4)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",1);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==5)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",1);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==6)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",1);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==7)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",1);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==8)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",1);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+  else if(this==9)
+  {
+    @test::PDC_status =1;
+    setControlVisibility("Park_Assi","PDCsts0",0);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",1);
+  }
+  else
+  {
+    @test::PDC_status =0;
+    setControlVisibility("Park_Assi","PDCsts0",1);
+    setControlVisibility("Park_Assi","PDCsts1",0);
+    setControlVisibility("Park_Assi","PDCsts2",0);
+    setControlVisibility("Park_Assi","PDCsts3",0);
+    setControlVisibility("Park_Assi","PDCsts4",0);
+    setControlVisibility("Park_Assi","PDCsts5",0);
+    setControlVisibility("Park_Assi","PDCsts6",0);
+    setControlVisibility("Park_Assi","PDCsts7",0);
+    setControlVisibility("Park_Assi","PDCsts8",0);
+    setControlVisibility("Park_Assi","PDCsts9",0);
+  }
+}
+/***********************************封装函数***********************************/
+On sysvar sysvar::test::HPP_precondition//重置HPP环相关参数
+{
+  if(@this)
+  {
+    set_condition(VehModMngtGlbSafe1UsgModSts,13);
+    set_condition(VehModMngtGlbSafe1CarModSts1,0);
+    set_condition(VehMtnStVehMtnSt,0);
+    set_condition(VehSpdLgtA,0);
+    set_condition(PrkLatLgtFailrPrkLatLgtFailr,0);
+    set_condition(EscStEscSt,0);
+    set_condition(isSteerStsToParkAssi,0);
+    set_condition(EngSt1WdStsEngSt1WdSts,5);
+    set_condition(IHUfail,0);
+    set_condition(RoadInclnRoadIncln,0);
+    set_condition(RoadInclnQly,0);
+    set_condition(TrlrPrsnt,0);
+    set_condition(AbsCtrlActvCtrlSts1,0);
+    set_condition(MsgReqByHillDwnCtrl,0);
+    set_condition(AsyALgtStsAsyALgtSts,0);
+    set_condition(SftyDecelGroupSafeAsySftyEnaDecel,0);
+    set_condition(BrkHptcWarnReqForAutDrvBrkHptcWarnReqForAutDrv,0);
+    set_condition(RcwmBrkReqRcwmBrkReq,0);
+    set_condition(RctaBrkReqRctaBrkReq,0);
+    set_condition(AsyADL3FuncCtrlStsADMod,0);
+  }
+}
+void set_condition (signal * SignalName, int Target)
+{
+  $SignalName = Target;
+}

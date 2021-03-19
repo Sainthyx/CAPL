@@ -1,0 +1,253 @@
+variables
+{
+  /* IL Include for FlexRay SPA model for NM (KL30) nodes
+   *
+   * This include file establishes the coupling between IL --> NM.
+   *
+   *
+   *
+   * Call ILFR1_OnInit() in "on preStart()" of the main program!
+   * Call ILFR1_OnStart() in "on start()" of the main program!
+   *
+   * Version 6.5, (c) 2016 Vector Informatik GmbH, Department for Networks and Distributed Systems
+   */
+
+  dword gILFR1_DebugFlags              = 0;
+
+  const dword cILFR1_ILIndDebug      = 0x0001;
+  const dword cILFR1_ILInitDebug     = 0x0002;
+  const dword cILFR1_ILControlDebug  = 0x0010;
+  
+  const dword cILFR1_NSToS = 1000000000;
+
+  // Internally used variables and timers:
+  dword   gILFR1_BusContext = 0;
+  int     gILFR1_EnableNode = 1;
+}
+
+/*****************************************************************************
+ * Include Initialization
+ *****************************************************************************/
+
+void ILFR1_OnInit ()
+{
+  gILFR1_BusContext = GetBusNameContext(gFR1BusName);
+  if (gILFR1_BusContext == 0)
+  {
+    write("[%.6f %NODE_NAME%] ERROR: cannot determine bus context of FlexRay bus '%s'!", TimeNowNS()/cILFR1_NSToS, gFR1BusName);
+  }
+
+  gILFR1_EnableNode = ((@sysvar::IL_FR1::NODES::N_%NODE_NAME%::EnableNode == 0) || (@sysvar::IL_FR1::enable_AllNodes == 0)) ? 0 : 1;
+ 
+  if (strncmp("%NODE_NAME%", "_Gateway", 50) == 0)
+  {
+    gILFR1_DebugFlags |= cILFR1_ILIndDebug;
+    gILFR1_DebugFlags |= cILFR1_ILInitDebug;
+    gILFR1_DebugFlags |= cILFR1_ILControlDebug;
+  }
+
+  ILFR1_SetIgnitionState(@sysvar::IL::Ignition);
+
+//  if ((@sysvar::IL::Power == 0) || (gILFR1_EnableNode == 0))
+//  {
+//    if (@sysvar::IL::Power == 0)
+//      NMFR1_Enable(0); // defined in the NM-Helper include file
+//    ILFR1_Enable(0);
+//  }
+}
+
+void ILFR1_OnStart ()
+{
+  if (gILFR1_DebugFlags & cILFR1_ILInitDebug)
+  {
+    write("+++++++++ %NODE_NAME%: IL on start()");
+  }
+
+  //ILFR1_SetIgnitionState(@sysvar::IL::Ignition);
+
+  if ((@sysvar::IL::Ignition > 0) && (@sysvar::IL::Power > 0))
+  {
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 1;
+  }
+  if (@sysvar::IL::Power == 0)
+  {
+    NMFR1_Enable(0); // defined in the NM-Helper include file
+    ILFR1_Enable(0);
+  }
+  else
+  {
+    // Request IL, because NM Network Mode Indication callback (normally doing this) may have set wrong bus context,
+    // and therefore does not have any effect, when called during measurement start from NM DLL.
+    NMFR1_StartIL(); // defined in the NM-Helper include file
+  }
+}
+
+/*****************************************************************************
+ * IL Control
+ * These functions can be called from the main program or react on
+ * panel controls or the NM status of the controlled node.
+ *****************************************************************************/
+
+void ILFR1_Enable (int enable)
+{
+  /* void ILFR1_Enable (int enable);
+   *
+   *  Function enables/disables the cyclic sending of all messages
+   *  that are controlled by the Interaction Layer.
+   */
+  int wasEnabled = -1;
+
+  gILFR1_EnableNode = ((@sysvar::IL_FR1::NODES::N_%NODE_NAME%::EnableNode == 0) || (@sysvar::IL_FR1::enable_AllNodes == 0)) ? 0 : 1;
+  if (gILFR1_EnableNode == 0) enable = 0;
+
+  //if (enable == wasEnabled) return;
+  SetBusContext(gILFR1_BusContext);
+  if (gILFR1_DebugFlags & cILFR1_ILControlDebug)
+  {
+    write("[%.6f %NODE_NAME%] ILFR1_Enable(%d) called ...", TimeNowNS()/cILFR1_NSToS, enable);
+  }
+
+  if (enable == 1)
+  {
+    gILFR1_EnableNode = 1;
+    ControlResume();
+    StartSim(gILFR1_BusContext, 1, 3);
+  }
+  else
+  {
+    StopSim(gILFR1_BusContext, 1, 3);
+    ControlWait();
+    gILFR1_EnableNode = 0;
+  }
+
+  wasEnabled = enable;
+}
+
+void ILFR1_StartStop (int dostart)
+{
+  /* void ILFR1_StartStop (int dostart);
+   *
+   *  Function starts/stops the cyclic sending of all messages
+   *  that are controlled by the Interaction Layer.
+   */
+  int wasStarted = -1;
+
+  //if (dostart == wasStarted) return;
+  if (gILFR1_EnableNode == 0) return;
+
+  SetBusContext(gILFR1_BusContext);
+  if (gILFR1_DebugFlags & cILFR1_ILControlDebug)
+  {
+    write("[%.6f %NODE_NAME%] ILFR1_StartStop(%d) called ...", TimeNowNS()/cILFR1_NSToS, dostart);
+  }
+
+  if (dostart == 1)
+  {
+    ControlResume();
+    StartSim(gILFR1_BusContext, 1, 2);
+  }
+  else
+  {
+    StopSim(gILFR1_BusContext, 1, 2);
+    ControlWait();
+  }
+
+  wasStarted = dostart;
+}
+
+void ILFR1_WaitResume (int resume)
+{
+  /* void ILFR1_WaitResume (int resume);
+   *
+   *  Function resumes/waits the cyclic sending of all messages
+   *  that are controlled by the Interaction Layer.
+   */
+  int wasResumed = -1;
+
+  //if (resume == wasResumed) return;
+  if (gILFR1_EnableNode == 0) return;
+
+  SetBusContext(gILFR1_BusContext);
+  if (gILFR1_DebugFlags & cILFR1_ILControlDebug)
+  {
+    write("[%.6f %NODE_NAME%] ILFR1_WaitResume(%d) called ...", TimeNowNS()/cILFR1_NSToS, resume);
+  }
+
+  if (resume == 1)
+  {
+    ControlResume();
+    StartSim(gILFR1_BusContext, 1, 1);
+  }
+  else
+  {
+    StopSim(gILFR1_BusContext, 1, 1);
+    ControlWait();
+  }
+
+  wasResumed = resume;
+}
+
+void ILFR1_SetIgnitionState (int ignition)
+{
+  /* void ILFR1_SetIgnitionState (int ignition);
+   *
+   *  Function sets the ignition state at the Interaction Layer.
+   */
+  int wasIgnition = -1;
+
+  //if (ignition == wasIgnition) return;
+  //SetBusContext(gILFR1_BusContext);
+  if (gILFR1_DebugFlags & cILFR1_ILControlDebug)
+  {
+    write("[%.6f %NODE_NAME%] ILFR1_SetIgnitionState(%d) called ...", TimeNowNS()/cILFR1_NSToS, ignition);
+  }
+
+  if (ignition > 0)
+  {
+    //@sysvar::FRInteractionLayer::CLAMP_15 = 1;
+    if (@sysvar::IL::Power > 0)
+    {
+      @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = 1;
+    }
+  }
+  else
+  {
+    //@sysvar::FRInteractionLayer::CLAMP_15 = 0;
+  }
+
+  wasIgnition = ignition;
+}
+
+void ILFR1_OnEnvClamp15(int enable) // Ignition
+{
+  ILFR1_SetIgnitionState(enable);
+  NMFR1_CancelOrReStartSleepTimer(enable);
+  if ((@sysvar::IL::Power > 0) && (TimeNowNS() != 0))
+  {
+    @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = (enable > 0) ? 1 : 0;
+  }
+}
+
+void ILFR1_OnEnvClamp30(int enable) // Power
+{
+  if(enable > 0)
+  {
+    NMFR1_Enable(1); // defined in the NM-Helper include file
+    ILFR1_Enable(1);
+    NMFR1_PowerOnStart(); // defined in the NM-Helper include file
+    if (TimeNowNS() != 0)
+    {
+      @sysvar::NM_FR1::NODES::N_%NODE_NAME%::RequestBus = (@sysvar::IL::Ignition > 0) ? 1 : 0;
+    }
+    NMFR1_CancelOrReStartSleepTimer(@sysvar::IL::Ignition);
+  }
+  else
+  {
+    NMFR1_Enable(0); // defined in the NM-Helper include file
+    ILFR1_Enable(0);
+  }
+}
+
+/*****************************************************************************
+ * EOF
+ *****************************************************************************/
